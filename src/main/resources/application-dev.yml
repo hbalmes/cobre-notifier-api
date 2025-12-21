@@ -1,0 +1,17 @@
+spring:
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        use_sql_comments: true
+
+logging:
+  level:
+    com.cobre.notifier.api: DEBUG
+    org.springframework.web: DEBUG
+
+springdoc:
+  swagger-ui:
+    enabled: true
+

@@ -1,0 +1,4 @@
+# Infrastructure Layer
+# Contiene los adaptadores: persistencia, kafka, web, webhooks, etc.
+
+

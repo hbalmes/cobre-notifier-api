@@ -16,7 +16,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Controlador REST para publicar eventos a Kafka.
@@ -81,15 +85,23 @@ public class EventController {
             log.info("Publishing test event: clientId={}, eventType={}", 
                     event.getClientId(), event.getEventType());
             
+            // Generar event_id único
+            String eventId = UUID.randomUUID().toString();
+            
+            // Fecha de publicación en formato ISO-8601 UTC
+            String publishedAt = Instant.now()
+                    .atZone(ZoneId.of("UTC"))
+                    .format(DateTimeFormatter.ISO_INSTANT);
+            
             String messageJson = objectMapper.writeValueAsString(event);
             kafkaEventProducer.publishEvent(messageJson);
             
             return ResponseEntity.ok(Map.of(
-                    "status", "success",
-                    "message", "Event published to Kafka",
-                    "clientId", event.getClientId() != null ? event.getClientId() : "",
-                    "eventType", event.getEventType() != null ? event.getEventType() : "",
-                    "topic", "platform.events"
+                    "event_id", eventId,
+                    "event_type", event.getEventType() != null ? event.getEventType() : "",
+                    "content", event.getContent() != null ? event.getContent() : "",
+                    "published_at", publishedAt,
+                    "status", "published"
             ));
         } catch (Exception e) {
             log.error("Error publishing test event", e);

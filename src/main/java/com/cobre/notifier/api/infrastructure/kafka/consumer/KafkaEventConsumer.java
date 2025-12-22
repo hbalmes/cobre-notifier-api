@@ -73,7 +73,7 @@ public class KafkaEventConsumer {
             NotificationEvent notification = NotificationEvent.create(
                     eventMessage.getClientId(),
                     eventMessage.getEventType(),
-                    eventMessage.getPayload(),
+                    eventMessage.getContent(),
                     subscription.getWebhookUrl()
             );
 

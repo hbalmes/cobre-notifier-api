@@ -8,7 +8,8 @@ import lombok.NoArgsConstructor;
 
 /**
  * DTO que representa un mensaje de evento recibido desde Kafka.
- * Mapea el formato del evento desde el topic platform.events
+ * Mapea el formato del evento desde el topic platform.events.
+ * El cliente solo debe enviar: client_id, event_type y content.
  */
 @Data
 @Builder
@@ -22,10 +23,7 @@ public class KafkaEventMessage {
     @JsonProperty("event_type")
     private String eventType;
 
-    @JsonProperty("payload")
-    private String payload;
-
-    @JsonProperty("timestamp")
-    private Long timestamp;
+    @JsonProperty("content")
+    private String content;
 }
 

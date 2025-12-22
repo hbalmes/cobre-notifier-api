@@ -50,7 +50,7 @@ class KafkaEventConsumerTest {
 
     private static final String CLIENT_ID = "client-123";
     private static final String EVENT_TYPE = "payment.completed";
-    private static final String PAYLOAD = "{\"amount\":100.0}";
+    private static final String CONTENT = "Credit card payment received for $150.00";
     private static final String WEBHOOK_URL = "https://example.com/webhook";
 
     private KafkaEventMessage eventMessage;
@@ -63,8 +63,7 @@ class KafkaEventConsumerTest {
         eventMessage = KafkaEventMessage.builder()
                 .clientId(CLIENT_ID)
                 .eventType(EVENT_TYPE)
-                .payload(PAYLOAD)
-                .timestamp(System.currentTimeMillis())
+                .content(CONTENT)
                 .build();
 
         subscription = Subscription.create(
@@ -75,18 +74,16 @@ class KafkaEventConsumerTest {
         notification = NotificationEvent.create(
                 CLIENT_ID,
                 EVENT_TYPE,
-                PAYLOAD,
+                CONTENT,
                 WEBHOOK_URL);
 
         kafkaMessageJson = """
                 {
                     "client_id": "%s",
                     "event_type": "%s",
-                    "payload": "%s",
-                    "timestamp": %d
+                    "content": "%s"
                 }
-                """.formatted(CLIENT_ID, EVENT_TYPE, PAYLOAD.replace("\"", "\\\""), 
-                        System.currentTimeMillis());
+                """.formatted(CLIENT_ID, EVENT_TYPE, CONTENT.replace("\"", "\\\""));
     }
 
     @Test

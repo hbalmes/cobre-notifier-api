@@ -1,4 +1,4 @@
-.PHONY: help build clean test compile run docker-up docker-down migrate docs docs-build docs-stop docs-update-specs
+.PHONY: help build clean test compile run docker-up docker-down rebuild migrate docs docs-build docs-stop docs-update-specs
 
 # Variables
 APP_NAME=cobre-notifier-api
@@ -57,6 +57,16 @@ docker-down: ## Stop Docker containers
 	@echo "$(YELLOW)Stopping Docker containers...$(NC)"
 	@docker-compose -f $(DOCKER_COMPOSE) down
 	@echo "$(GREEN)✅ Containers stopped$(NC)"
+
+rebuild: ## Rebuild and restart the application container
+	@echo "$(YELLOW)Rebuilding application image...$(NC)"
+	@docker-compose -f $(DOCKER_COMPOSE) build app
+	@echo "$(GREEN)Restarting application container...$(NC)"
+	@docker-compose -f $(DOCKER_COMPOSE) up -d app
+	@echo "$(GREEN)✅ Application rebuilt and restarted$(NC)"
+	@echo "$(YELLOW)Waiting for application to be ready...$(NC)"
+	@sleep 5
+	@docker-compose -f $(DOCKER_COMPOSE) logs --tail 20 app
 
 docker-logs: ## Show Docker containers logs
 	@docker-compose -f $(DOCKER_COMPOSE) logs -f

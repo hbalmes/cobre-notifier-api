@@ -128,7 +128,7 @@ services:
     ports:
       - "${SERVER_PORT:-8080}:8080"
     environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
       DB_HOST: postgres
       DB_PORT: 5432
       DB_NAME: ${DB_NAME:-cobre_notifier}
@@ -140,7 +140,7 @@ services:
       SERVER_PORT: 8080
       LOG_LEVEL_ROOT: ${LOG_LEVEL_ROOT:-INFO}
       LOG_LEVEL_APP: ${LOG_LEVEL_APP:-INFO}
-      SWAGGER_ENABLED: ${SWAGGER_ENABLED:-false}
+      SWAGGER_ENABLED: ${SWAGGER_ENABLED:-true}
     networks:
       - cobre-network
     healthcheck:

@@ -115,7 +115,7 @@ metrics: ## Show Prometheus metrics
 
 # Swagger/OpenAPI
 swagger: ## Open Swagger UI in browser (macOS)
-	@open http://localhost:$${SERVER_PORT:-8080}/swagger-ui.html || echo "$(YELLOW)Application not running$(NC)"
+	@open http://localhost:$${SERVER_PORT:-8080}/swagger-ui/index.html || echo "$(YELLOW)Application not running$(NC)"
 
 api-docs: ## Show API docs JSON
 	@curl -s http://localhost:$${SERVER_PORT:-8080}/api-docs | jq . || echo "$(YELLOW)Application not running or jq not installed$(NC)"

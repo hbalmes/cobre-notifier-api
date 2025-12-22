@@ -150,6 +150,22 @@ services:
       retries: 3
       start_period: 40s
 
+  # Documentation (Docsify)
+  docs:
+    build:
+      context: .
+      dockerfile: Dockerfile.docs
+    container_name: cobre-docs
+    ports:
+      - "${DOCS_PORT:-3001}:3000"
+    volumes:
+      - ./docs:/app/docs:ro
+      - ./specs:/app/specs:ro
+    working_dir: /app
+    networks:
+      - cobre-network
+    command: docsify serve docs --port 3000 --no-open
+
 volumes:
   postgres_data:
     driver: local

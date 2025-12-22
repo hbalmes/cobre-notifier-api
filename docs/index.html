@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Cobre Notifier API - Documentación</title>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+  <meta name="description" content="Documentación del sistema de notificaciones event-driven para Cobre">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
+  
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/docsify@4/lib/themes/vue.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/docsify-themeable@0/dist/css/theme-defaults.css">
+  
+  <style>
+    :root {
+      --theme-color: #42b983;
+      --sidebar-width: 300px;
+    }
+    
+    .app-name-link img {
+      max-width: 200px;
+      margin-bottom: 1rem;
+    }
+    
+    .sidebar {
+      background-color: #fafafa;
+    }
+    
+    .markdown-section {
+      max-width: 900px;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">Cargando...</div>
+  
+  <script>
+    window.$docsify = {
+      name: 'Cobre Notifier API',
+      repo: '',
+      loadSidebar: true,
+      loadNavbar: true,
+      subMaxLevel: 2,
+      homepage: 'README.md',
+      search: {
+        maxAge: 86400000,
+        paths: 'auto',
+        placeholder: 'Buscar...',
+        noData: 'No se encontraron resultados',
+        depth: 6
+      },
+      pagination: {
+        previousText: '← Anterior',
+        nextText: 'Siguiente →',
+        crossChapter: true,
+        crossChapterText: true,
+      },
+      plugins: [
+        function(hook, vm) {
+          hook.beforeEach(function(html) {
+            return html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, function(match, text, url) {
+              if (url.startsWith('http')) {
+                return '<a href="' + url + '" target="_blank">' + text + '</a>';
+              }
+              return match;
+            });
+          });
+        }
+      ]
+    }
+  </script>
+  
+  <script src="//cdn.jsdelivr.net/npm/docsify@4"></script>
+  <script src="//cdn.jsdelivr.net/npm/docsify/lib/plugins/search.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/docsify/lib/plugins/pagination.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/docsify/lib/plugins/emoji.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/docsify/lib/plugins/external-script.min.js"></script>
+</body>
+</html>
+

@@ -1,4 +1,4 @@
-.PHONY: help build clean test compile run docker-up docker-down migrate
+.PHONY: help build clean test compile run docker-up docker-down migrate docs docs-build docs-stop docs-update-specs
 
 # Variables
 APP_NAME=cobre-notifier-api

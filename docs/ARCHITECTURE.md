@@ -150,34 +150,60 @@ public class NotificationService implements ProcessNotificationUseCase {
 
 ### Flujo de Procesamiento de Notificación
 
+```mermaid
+flowchart TD
+    Start[Kafka Consumer recibe evento] --> Deserialize[Deserializa a KafkaEventMessage]
+    Deserialize --> ValidateSub[Validar Suscripción<br/>SubscriptionRepository]
+    ValidateSub -->|Válida| Create[NotificationEvent.create<br/>Domain Layer]
+    ValidateSub -->|Inválida| Error[Error - No Acknowledge]
+    Create --> Process[NotificationService.process<br/>Application Layer]
+    Process --> ValidateSub2[Validar Suscripción Actualizada<br/>SubscriptionRepository]
+    ValidateSub2 --> WebhookDeliver[WebhookDeliveryService.deliver<br/>Application Layer]
+    WebhookDeliver --> WebhookAdapter[WebhookClientAdapter.deliver<br/>Infrastructure Layer]
+    WebhookAdapter --> RestTemplate[RestTemplate HTTP call<br/>Infrastructure]
+    RestTemplate -->|Éxito| SaveSuccess[NotificationEventRepository.save<br/>Output Port]
+    RestTemplate -->|Fallo| SaveFailed[NotificationEventRepository.save<br/>con estado FAILED]
+    SaveSuccess --> Adapter[NotificationEventRepositoryAdapter<br/>Infrastructure]
+    SaveFailed --> Adapter
+    Adapter --> JPA[NotificationEventJpaRepository.save<br/>Spring Data JPA]
+    JPA --> DB[(PostgreSQL Database)]
+    SaveSuccess --> RetryCheck{¿Puede<br/>Reintentar?}
+    SaveFailed --> RetryCheck
+    RetryCheck -->|Sí| RetryService[RetryService<br/>Scheduler]
+    RetryCheck -->|No| End[Fin]
+    RetryService -->|Exponential Backoff| Process
 ```
-1. Kafka Consumer recibe evento
-   ↓
-2. Deserializa a KafkaEventMessage
-   ↓
-3. NotificationService.process() (Application Layer)
-   ↓
-4. SubscriptionRepository.findActiveByClientIdAndEventType() (Output Port)
-   ↓
-5. SubscriptionRepositoryAdapter (Infrastructure)
-   ↓
-6. SubscriptionJpaRepository (Spring Data JPA)
-   ↓
-7. Validación de suscripción (Domain Logic)
-   ↓
-8. NotificationEvent.create() (Domain)
-   ↓
-9. WebhookDeliveryService.deliver() (Application)
-   ↓
-10. WebhookClientAdapter.deliver() (Infrastructure)
-    ↓
-11. RestTemplate HTTP call
-    ↓
-12. NotificationEventRepository.save() (Output Port)
-    ↓
-13. NotificationEventRepositoryAdapter (Infrastructure)
-    ↓
-14. NotificationEventJpaRepository.save() (Spring Data JPA)
+
+### Diagrama de Secuencia - Arquitectura Hexagonal
+
+Este diagrama muestra cómo las capas interactúan siguiendo los principios de arquitectura hexagonal.
+
+```mermaid
+sequenceDiagram
+    participant External as Sistema Externo<br/>(Kafka/REST)
+    participant Infrastructure as Infrastructure Layer
+    participant Application as Application Layer
+    participant Domain as Domain Layer
+    participant OutputPort as Output Port<br/>(Repository Interface)
+    participant Adapter as Infrastructure Adapter
+    participant DB as Base de Datos
+
+    External->>Infrastructure: Event/Request
+    Infrastructure->>Application: Input Port<br/>(Use Case Interface)
+    Application->>Domain: Domain Logic<br/>(Entity Methods)
+    Domain-->>Application: Domain Object
+    
+    Application->>OutputPort: Repository Interface
+    OutputPort->>Adapter: Implementation
+    Adapter->>DB: Database Operation
+    DB-->>Adapter: Result
+    Adapter-->>OutputPort: Domain Object
+    OutputPort-->>Application: Domain Object
+    
+    Application->>Domain: Business Logic
+    Domain-->>Application: Updated Domain Object
+    Application-->>Infrastructure: Result
+    Infrastructure-->>External: Response/Event
 ```
 
 ## 🔌 Puertos (Ports)
@@ -254,6 +280,11 @@ class NotificationServiceTest {
 3. **Flexibilidad**: Fácil cambiar implementaciones (ej: cambiar de JPA a MongoDB)
 4. **Escalabilidad**: Fácil agregar nuevos adaptadores
 5. **Separación de Concerns**: Lógica de negocio separada de detalles técnicos
+
+## 📈 Diagramas Adicionales
+
+Para ver más diagramas detallados del sistema, consulta:
+- [Diagramas Completos](DIAGRAMS.md) - Flujos, secuencias y ciclo de vida
 
 ## 🔄 Dependencias
 

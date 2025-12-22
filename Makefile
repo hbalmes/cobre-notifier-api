@@ -120,6 +120,23 @@ swagger: ## Open Swagger UI in browser (macOS)
 api-docs: ## Show API docs JSON
 	@curl -s http://localhost:$${SERVER_PORT:-8080}/api-docs | jq . || echo "$(YELLOW)Application not running or jq not installed$(NC)"
 
+docs: ## Start documentation server (Docsify)
+	@echo "$(GREEN)Starting documentation server...$(NC)"
+	@docker-compose up -d docs
+	@echo "$(GREEN)Documentation available at: http://localhost:$${DOCS_PORT:-3001}$(NC)"
+
+docs-build: ## Build documentation Docker image
+	@echo "$(YELLOW)Building documentation image...$(NC)"
+	@docker-compose build docs
+
+docs-stop: ## Stop documentation server
+	@docker-compose stop docs
+
+docs-update-specs: ## Update OpenAPI specs from running application
+	@echo "$(YELLOW)Updating OpenAPI specs...$(NC)"
+	@curl -s http://localhost:$${SERVER_PORT:-8080}/api-docs > specs/openapi.json || echo "$(YELLOW)Application not running$(NC)"
+	@echo "$(GREEN)✅ Specs updated$(NC)"
+
 # Cleanup
 clean-all: clean ## Clean everything including Docker volumes
 	@echo "$(YELLOW)Cleaning Docker volumes...$(NC)"

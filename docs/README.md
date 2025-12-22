@@ -304,35 +304,9 @@ src/test/java/com/cobre/notifier/api/
 
 ## 📚 Documentación
 
-### Documentación con Docsify
-
-La documentación está disponible con Docsify en Docker:
-
-```bash
-# Iniciar servidor de documentación
-make docs
-
-# O manualmente
-docker-compose up -d docs
-```
-
-**URLs de Documentación:**
-- **Docsify**: http://localhost:3001
-- **Swagger UI**: http://localhost:8080/swagger-ui/index.html
-- **API Docs JSON**: http://localhost:8080/api-docs
-
-### Estructura de Documentación
-
-- **docs/**: Documentación Markdown (README, Arquitectura, Seguridad)
-- **specs/**: Especificaciones OpenAPI/Swagger (openapi.json)
-
-### Actualizar Especificaciones
-
-Para actualizar las especificaciones OpenAPI desde la aplicación en ejecución:
-
-```bash
-make docs-update-specs
-```
+- [Arquitectura](docs/ARCHITECTURE.md) - Detalles de la arquitectura hexagonal
+- [Seguridad](docs/SECURITY.md) - Consideraciones de seguridad
+- [Swagger UI](http://localhost:8080/swagger-ui/index.html) - Documentación interactiva de la API
 
 ## 🚢 Despliegue
 

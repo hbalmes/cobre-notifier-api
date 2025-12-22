@@ -6,6 +6,13 @@ import com.cobre.notifier.api.domain.NotificationEvent;
 import com.cobre.notifier.api.infrastructure.web.dto.NotificationEventFilterRequest;
 import com.cobre.notifier.api.infrastructure.web.dto.NotificationEventResponse;
 import com.cobre.notifier.api.infrastructure.web.mapper.NotificationEventWebMapper;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -24,6 +31,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/v1/notification_events")
 @RequiredArgsConstructor
+@Tag(name = "Notification Events", description = "API para gestionar eventos de notificación")
 public class NotificationEventController {
 
     private final GetNotificationEventsUseCase getNotificationEventsUseCase;
@@ -38,8 +46,20 @@ public class NotificationEventController {
      * @param filters Filtros opcionales (clientId, status, fromDate, toDate)
      * @return Lista de notificaciones que cumplen los criterios
      */
+    @Operation(
+            summary = "Obtener todas las notificaciones",
+            description = "Retorna una lista de notificaciones con filtros opcionales. Todos los parámetros de filtro son opcionales."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Lista de notificaciones obtenida exitosamente",
+                    content = @Content(schema = @Schema(implementation = NotificationEventResponse.class))
+            )
+    })
     @GetMapping
     public ResponseEntity<List<NotificationEventResponse>> getAll(
+            @Parameter(description = "Filtros opcionales para buscar notificaciones")
             @ModelAttribute NotificationEventFilterRequest filters) {
         log.debug("Getting all notification events with filters: {}", filters);
         
@@ -65,8 +85,25 @@ public class NotificationEventController {
      * @param id ID de la notificación
      * @return Notificación encontrada
      */
+    @Operation(
+            summary = "Obtener notificación por ID",
+            description = "Retorna una notificación específica por su identificador único"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Notificación encontrada",
+                    content = @Content(schema = @Schema(implementation = NotificationEventResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Notificación no encontrada"
+            )
+    })
     @GetMapping("/{id}")
-    public ResponseEntity<NotificationEventResponse> getById(@PathVariable UUID id) {
+    public ResponseEntity<NotificationEventResponse> getById(
+            @Parameter(description = "ID único de la notificación", required = true, example = "123e4567-e89b-12d3-a456-426614174000")
+            @PathVariable UUID id) {
         log.debug("Getting notification event by id: {}", id);
         
         NotificationEvent notification = getNotificationEventsUseCase.getById(id);
@@ -83,8 +120,25 @@ public class NotificationEventController {
      * @param id ID de la notificación a reintentar
      * @return Notificación procesada con estado actualizado
      */
+    @Operation(
+            summary = "Reintentar notificación",
+            description = "Reintenta manualmente el envío de una notificación. Resetea el estado y procesa nuevamente."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "202",
+                    description = "Notificación aceptada para replay",
+                    content = @Content(schema = @Schema(implementation = NotificationEventResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Notificación no encontrada"
+            )
+    })
     @PostMapping("/{id}/replay")
-    public ResponseEntity<NotificationEventResponse> replay(@PathVariable UUID id) {
+    public ResponseEntity<NotificationEventResponse> replay(
+            @Parameter(description = "ID único de la notificación a reintentar", required = true, example = "123e4567-e89b-12d3-a456-426614174000")
+            @PathVariable UUID id) {
         log.info("Replaying notification event: {}", id);
         
         NotificationEvent notification = replayNotificationUseCase.replay(id);

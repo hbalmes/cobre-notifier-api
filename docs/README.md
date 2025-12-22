@@ -1,21 +1,30 @@
 # Cobre Notifier API
 
+<div class="badges">
+  <a href="https://www.oracle.com/java/" class="badge badge-java" target="_blank">Java 21</a>
+  <a href="https://spring.io/projects/spring-boot" class="badge badge-spring" target="_blank">Spring Boot 3.2.0</a>
+  <a href="https://maven.apache.org/" class="badge badge-npm" target="_blank">Maven</a>
+  <a href="https://www.postgresql.org/" class="badge badge-coverage" target="_blank">PostgreSQL 15</a>
+  <a href="https://kafka.apache.org/" class="badge badge-kafka" target="_blank">Apache Kafka</a>
+  <a href="https://opensource.org/licenses/MIT" class="badge badge-license" target="_blank">License MIT</a>
+</div>
+
 Sistema de notificaciones event-driven para Cobre. Consume eventos de Kafka, valida suscripciones de clientes y entrega notificaciones vía webhooks HTTPS con estrategia de retry con exponential backoff.
 
 ## 📋 Tabla de Contenidos
 
-- [Características](#-características)
-- [Stack Tecnológico](#-stack-tecnológico)
-- [Arquitectura](#-arquitectura)
-- [Requisitos](#-requisitos)
-- [Instalación](#-instalación)
-- [Configuración](#-configuración)
-- [Uso](#-uso)
-- [API REST](#-api-rest)
-- [Docker](#-docker)
-- [Testing](#-testing)
-- [Documentación](#-documentación)
-- [Despliegue](#-despliegue)
+- [Características](#características)
+- [Stack Tecnológico](#stack-tecnológico)
+- [Arquitectura](#arquitectura)
+- [Requisitos](#requisitos)
+- [Instalación](#instalación)
+- [Configuración](#configuración)
+- [Uso](#uso)
+- [API REST](#api-rest)
+- [Docker](#docker)
+- [Testing](#testing)
+- [Documentación](#documentación)
+- [Despliegue](#despliegue)
 
 ## ✨ Características
 
@@ -62,7 +71,7 @@ src/main/java/com/cobre/notifier/api/
     └── web/             # Adaptadores web (REST API)
 ```
 
-Para más detalles, ver [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+Para más detalles, ver [Arquitectura Detallada](ARCHITECTURE.md)
 
 ## 📦 Requisitos
 
@@ -304,7 +313,7 @@ src/test/java/com/cobre/notifier/api/
 
 ## 📚 Documentación
 
-- [Arquitectura](docs/ARCHITECTURE.md) - Detalles de la arquitectura hexagonal
+- [Arquitectura](ARCHITECTURE.md) - Detalles de la arquitectura hexagonal
 - [Seguridad](docs/SECURITY.md) - Consideraciones de seguridad
 - [Swagger UI](http://localhost:8080/swagger-ui/index.html) - Documentación interactiva de la API
 

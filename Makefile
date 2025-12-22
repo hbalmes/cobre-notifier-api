@@ -33,6 +33,14 @@ test-coverage: ## Run tests with coverage report
 	@mvn clean test jacoco:report
 	@echo "$(GREEN)Coverage report generated at: target/site/jacoco/index.html$(NC)"
 
+coverage-report: ## Open coverage report in browser
+	@if [ -f target/site/jacoco/index.html ]; then \
+		echo "$(GREEN)Opening coverage report...$(NC)"; \
+		open target/site/jacoco/index.html || xdg-open target/site/jacoco/index.html || echo "$(YELLOW)Please open manually: target/site/jacoco/index.html$(NC)"; \
+	else \
+		echo "$(YELLOW)Coverage report not found. Run 'make test-coverage' first.$(NC)"; \
+	fi
+
 run: ## Run the application
 	@echo "$(GREEN)Starting application...$(NC)"
 	@mvn spring-boot:run

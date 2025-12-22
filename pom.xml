@@ -157,18 +157,6 @@
                 </configuration>
             </plugin>
             
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <configuration>
-                    <argLine>
-                        -Djdk.instrument.traceUsage=false
-                        -XX:+EnableDynamicAgentLoading
-                    </argLine>
-                </configuration>
-                <version>3.2.2</version>
-            </plugin>
-            
             <!-- JaCoCo for code coverage -->
             <plugin>
                 <groupId>org.jacoco</groupId>
@@ -188,6 +176,17 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+            
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.2.2</version>
+                <configuration>
+                    <argLine>
+                        @{argLine} -Djdk.instrument.traceUsage=false -XX:+EnableDynamicAgentLoading
+                    </argLine>
+                </configuration>
             </plugin>
         </plugins>
     </build>

@@ -1,0 +1,10 @@
+# Test configuration - Reduced logging for cleaner test output
+logging:
+  level:
+    root: WARN
+    com.cobre.notifier.api: INFO
+    com.cobre.notifier.api.infrastructure.webhook: ERROR  # Only show errors, not debug/info in tests
+    org.springframework: WARN
+    org.hibernate: WARN
+    org.springframework.web: WARN
+

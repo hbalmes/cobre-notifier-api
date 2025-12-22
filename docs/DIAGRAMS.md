@@ -634,7 +634,7 @@ sequenceDiagram
     participant WebhookService as WebhookDeliveryService
     participant ClientWebhook as Cliente Webhook URL
 
-    Client->>Controller: POST /api/v1/notification_events/{id}/replay
+    Client->>Controller: POST /notification_events/{notification_event_id}/replay
     Controller->>ReplayUseCase: replay(notificationId)
     ReplayUseCase->>NotifService: replay(notificationId)
     NotifService->>NotifRepo: findById(id)
@@ -694,7 +694,7 @@ sequenceDiagram
     participant WebhookService as WebhookDeliveryService
     participant ClientWebhook as Cliente Webhook URL
 
-    Client->>Controller: POST /api/v1/notification_events/{id}/replay
+    Client->>Controller: POST /notification_events/{notification_event_id}/replay
     Controller->>ReplayUseCase: replay(notificationId)
     ReplayUseCase->>NotifService: replay(notificationId)
     NotifService->>NotifRepo: findById(id)

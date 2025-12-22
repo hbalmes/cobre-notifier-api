@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 @Schema(description = "Filtros opcionales para buscar notificaciones")
 public class NotificationEventFilterRequest {
 
-    @Schema(description = "ID del cliente para filtrar", example = "client-123")
+    @Schema(description = "ID del cliente para filtrar", example = "CLIENT001")
     private String clientId;
 
     @Schema(description = "Estado de entrega para filtrar", example = "SENT")

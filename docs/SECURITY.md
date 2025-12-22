@@ -50,7 +50,7 @@ Este documento describe las consideraciones de seguridad implementadas y recomen
 **Ejemplo de implementación sugerida**:
 ```java
 @PreAuthorize("hasRole('ADMIN')")
-@GetMapping("/api/v1/notification_events")
+@GetMapping("/notification_events")
 public ResponseEntity<List<NotificationEventResponse>> getAll(...) {
     // ...
 }

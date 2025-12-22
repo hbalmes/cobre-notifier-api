@@ -53,7 +53,7 @@ class EventControllerTest {
         
         testEvent = KafkaEventMessage.builder()
                 .clientId("test-client-123")
-                .eventType("payment.completed")
+                .eventType("credit_card_payment")
                 .payload("{\"amount\":1000}")
                 .timestamp(System.currentTimeMillis())
                 .build();
@@ -73,7 +73,7 @@ class EventControllerTest {
                 .andExpect(jsonPath("$.status").value("success"))
                 .andExpect(jsonPath("$.message").value("Event published to Kafka"))
                 .andExpect(jsonPath("$.clientId").value("test-client-123"))
-                .andExpect(jsonPath("$.eventType").value("payment.completed"))
+                .andExpect(jsonPath("$.eventType").value("credit_card_payment"))
                 .andExpect(jsonPath("$.topic").value("platform.events"));
 
         verify(kafkaEventProducer, times(1)).publishEvent(anyString());
@@ -157,7 +157,7 @@ class EventControllerTest {
         KafkaEventMessage deserialized = objectMapper.readValue(publishedMessage, KafkaEventMessage.class);
         
         assertThat(deserialized.getClientId()).isEqualTo("test-client-123");
-        assertThat(deserialized.getEventType()).isEqualTo("payment.completed");
+        assertThat(deserialized.getEventType()).isEqualTo("credit_card_payment");
         assertThat(deserialized.getPayload()).isEqualTo("{\"amount\":1000}");
         
         verify(kafkaEventProducer, times(1)).publishEvent(anyString());

@@ -213,38 +213,76 @@ curl http://localhost:8080/actuator/prometheus
 
 ## 🔌 API REST
 
-### GET /api/v1/notification_events
+### GET /notification_events
 
 Obtiene todas las notificaciones con filtros opcionales.
 
 **Query Parameters:**
-- `client_id` (opcional): ID del cliente
+- `client_id` (opcional): ID del cliente (ej: CLIENT001)
 - `status` (opcional): Estado de entrega (PENDING, SENT, FAILED, RETRYING)
 - `from_date` (opcional): Fecha desde (formato: yyyy-MM-ddTHH:mm:ss)
 - `to_date` (opcional): Fecha hasta (formato: yyyy-MM-ddTHH:mm:ss)
 
 **Ejemplo:**
 ```bash
-curl "http://localhost:8080/api/v1/notification_events?client_id=client-123&status=SENT"
+curl "http://localhost:8080/notification_events?client_id=CLIENT001&status=SENT"
 ```
 
-### GET /api/v1/notification_events/{id}
+**Respuesta:**
+```json
+[
+  {
+    "event_id": "123e4567-e89b-12d3-a456-426614174000",
+    "event_type": "credit_card_payment",
+    "content": "Credit card payment received for $150.00",
+    "delivery_date": "2024-03-15T09:30:22Z",
+    "delivery_status": "completed",
+    "client_id": "CLIENT001"
+  }
+]
+```
+
+### GET /notification_events/{notification_event_id}
 
 Obtiene una notificación por su ID.
 
 **Ejemplo:**
 ```bash
-curl http://localhost:8080/api/v1/notification_events/123e4567-e89b-12d3-a456-426614174000
+curl http://localhost:8080/notification_events/123e4567-e89b-12d3-a456-426614174000
 ```
 
-### POST /api/v1/notification_events/{id}/replay
+**Respuesta:**
+```json
+{
+  "event_id": "123e4567-e89b-12d3-a456-426614174000",
+  "event_type": "debit_transfer",
+  "content": "Money transfer sent to Account #8901 for $500.00",
+  "delivery_date": "2024-03-15T14:30:55Z",
+  "delivery_status": "completed",
+  "client_id": "CLIENT003"
+}
+```
+
+### POST /notification_events/{notification_event_id}/replay
 
 Reintenta manualmente el envío de una notificación.
 
 **Ejemplo:**
 ```bash
-curl -X POST http://localhost:8080/api/v1/notification_events/123e4567-e89b-12d3-a456-426614174000/replay
+curl -X POST http://localhost:8080/notification_events/123e4567-e89b-12d3-a456-426614174000/replay
 ```
+
+**Tipos de eventos soportados:**
+- `credit_card_payment` - Pago con tarjeta de crédito
+- `debit_card_withdrawal` - Retiro con tarjeta de débito
+- `credit_transfer` - Transferencia recibida
+- `debit_automatic_payment` - Pago automático
+- `credit_refund` - Reembolso
+- `debit_transfer` - Transferencia enviada
+- `credit_deposit` - Depósito
+- `debit_purchase` - Compra
+- `credit_cashback` - Cashback
+- `debit_subscription` - Suscripción
 
 Para documentación completa, ver Swagger UI: http://localhost:8080/swagger-ui/index.html
 

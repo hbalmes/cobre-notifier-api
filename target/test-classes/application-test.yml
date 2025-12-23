@@ -1,0 +1,28 @@
+# Test configuration - Reduced logging for cleaner test output
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+  flyway:
+    enabled: false
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: test-group
+      auto-offset-reset: earliest
+
+logging:
+  level:
+    root: WARN
+    com.cobre.notifier.api: INFO
+    com.cobre.notifier.api.infrastructure.webhook: ERROR  # Only show errors, not debug/info in tests
+    org.springframework: WARN
+    org.hibernate: WARN
+    org.springframework.web: WARN
+

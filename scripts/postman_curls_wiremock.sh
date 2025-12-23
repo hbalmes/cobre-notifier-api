@@ -69,6 +69,39 @@ done
 
 echo ""
 echo "============================================"
+echo "Consultando notificaciones creadas"
+echo "============================================"
+echo ""
+
+# Esperar un momento para que se procesen los eventos
+sleep 3
+
+echo "5. Consultar todas las notificaciones de CLIENT001"
+curl -X GET "http://localhost:8080/notification_events?client_id=CLIENT001"
+echo ""
+echo ""
+
+echo "6. Consultar notificaciones completadas (snake_case)"
+curl -X GET "http://localhost:8080/notification_events?delivery_status=completed"
+echo ""
+echo ""
+
+echo "7. Consultar notificaciones completadas (camelCase)"
+curl -X GET "http://localhost:8080/notification_events?deliveryStatus=completed"
+echo ""
+echo ""
+
+echo "8. Consultar notificaciones fallidas"
+curl -X GET "http://localhost:8080/notification_events?delivery_status=failed"
+echo ""
+echo ""
+
+echo "9. Consultar notificaciones pendientes"
+curl -X GET "http://localhost:8080/notification_events?delivery_status=pending"
+echo ""
+echo ""
+
+echo "============================================"
 echo "Eventos enviados. Revisa las métricas en Grafana"
 echo "============================================"
 

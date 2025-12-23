@@ -202,6 +202,194 @@
 				"description": "Envía un evento para CLIENT004 que debería fallar con error 400 (WireMock responde 400) y entrar en reintentos"
 			},
 			"response": []
+		},
+		{
+			"name": "GET - Todas las notificaciones",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/notification_events",
+					"host": ["{{base_url}}"],
+					"path": ["notification_events"]
+				},
+				"description": "Obtiene todas las notificaciones sin filtros"
+			},
+			"response": []
+		},
+		{
+			"name": "GET - Notificaciones por client_id (snake_case)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/notification_events?client_id=CLIENT001",
+					"host": ["{{base_url}}"],
+					"path": ["notification_events"],
+					"query": [
+						{
+							"key": "client_id",
+							"value": "CLIENT001"
+						}
+					]
+				},
+				"description": "Obtiene notificaciones filtradas por client_id usando snake_case"
+			},
+			"response": []
+		},
+		{
+			"name": "GET - Notificaciones por clientId (camelCase)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/notification_events?clientId=CLIENT001",
+					"host": ["{{base_url}}"],
+					"path": ["notification_events"],
+					"query": [
+						{
+							"key": "clientId",
+							"value": "CLIENT001"
+						}
+					]
+				},
+				"description": "Obtiene notificaciones filtradas por clientId usando camelCase"
+			},
+			"response": []
+		},
+		{
+			"name": "GET - Notificaciones completadas",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/notification_events?delivery_status=completed",
+					"host": ["{{base_url}}"],
+					"path": ["notification_events"],
+					"query": [
+						{
+							"key": "delivery_status",
+							"value": "completed"
+						}
+					]
+				},
+				"description": "Obtiene notificaciones con estado 'completed' (enviadas exitosamente)"
+			},
+			"response": []
+		},
+		{
+			"name": "GET - Notificaciones fallidas",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/notification_events?delivery_status=failed",
+					"host": ["{{base_url}}"],
+					"path": ["notification_events"],
+					"query": [
+						{
+							"key": "delivery_status",
+							"value": "failed"
+						}
+					]
+				},
+				"description": "Obtiene notificaciones con estado 'failed' (fallidas después de todos los reintentos)"
+			},
+			"response": []
+		},
+		{
+			"name": "GET - Notificaciones pendientes",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/notification_events?delivery_status=pending",
+					"host": ["{{base_url}}"],
+					"path": ["notification_events"],
+					"query": [
+						{
+							"key": "delivery_status",
+							"value": "pending"
+						}
+					]
+				},
+				"description": "Obtiene notificaciones con estado 'pending' (pendientes de entrega o reintento)"
+			},
+			"response": []
+		},
+		{
+			"name": "GET - Notificaciones con filtros combinados",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/notification_events?client_id=CLIENT001&delivery_status=completed&from_date=2024-01-01T00:00:00&to_date=2024-12-31T23:59:59",
+					"host": ["{{base_url}}"],
+					"path": ["notification_events"],
+					"query": [
+						{
+							"key": "client_id",
+							"value": "CLIENT001"
+						},
+						{
+							"key": "delivery_status",
+							"value": "completed"
+						},
+						{
+							"key": "from_date",
+							"value": "2024-01-01T00:00:00"
+						},
+						{
+							"key": "to_date",
+							"value": "2024-12-31T23:59:59"
+						}
+					]
+				},
+				"description": "Obtiene notificaciones con múltiples filtros: client_id, delivery_status y rango de fechas"
+			},
+			"response": []
+		},
+		{
+			"name": "GET - Notificación por ID",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/notification_events/{notification_id}",
+					"host": ["{{base_url}}"],
+					"path": ["notification_events", "{notification_id}"],
+					"variable": [
+						{
+							"key": "notification_id",
+							"value": "123e4567-e89b-12d3-a456-426614174000",
+							"description": "UUID de la notificación"
+						}
+					]
+				},
+				"description": "Obtiene una notificación específica por su ID"
+			},
+			"response": []
+		},
+		{
+			"name": "POST - Replay de notificación",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/notification_events/{notification_id}/replay",
+					"host": ["{{base_url}}"],
+					"path": ["notification_events", "{notification_id}", "replay"],
+					"variable": [
+						{
+							"key": "notification_id",
+							"value": "123e4567-e89b-12d3-a456-426614174000",
+							"description": "UUID de la notificación a reintentar"
+						}
+					]
+				},
+				"description": "Reintenta manualmente el envío de una notificación. Solo funciona para notificaciones no enviadas exitosamente."
+			},
+			"response": []
 		}
 	],
 	"variable": [

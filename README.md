@@ -1,5 +1,13 @@
 # Cobre Notifier API
 
+![Java](https://img.shields.io/badge/Java-21-orange.svg)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2.0-brightgreen.svg)
+![Maven](https://img.shields.io/badge/Maven-3.9+-blue.svg)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-blue.svg)
+![Kafka](https://img.shields.io/badge/Apache%20Kafka-3.x-black.svg)
+![Docker](https://img.shields.io/badge/Docker-Compose-blue.svg)
+![License](https://img.shields.io/badge/License-Proprietary-red.svg)
+
 Sistema de notificaciones event-driven para Cobre. Consume eventos de Kafka, valida suscripciones de clientes y entrega notificaciones vía webhooks HTTPS con estrategia de retry con exponential backoff.
 
 ## 📋 Tabla de Contenidos
@@ -12,6 +20,7 @@ Sistema de notificaciones event-driven para Cobre. Consume eventos de Kafka, val
 - [Configuración](#-configuración)
 - [Uso](#-uso)
 - [API REST](#-api-rest)
+- [Seguridad](#-seguridad)
 - [Docker](#-docker)
 - [Testing](#-testing)
 - [Documentación](#-documentación)
@@ -22,7 +31,9 @@ Sistema de notificaciones event-driven para Cobre. Consume eventos de Kafka, val
 - ✅ Consumo de eventos desde Kafka (`platform.events`)
 - ✅ Validación de suscripciones de clientes
 - ✅ Entrega de notificaciones vía webhooks HTTPS
-- ✅ Estrategia de retry con exponential backoff
+- ✅ Estrategia de retry con exponential backoff (3 intentos: 1s, 2s, 4s)
+- ✅ Scheduler automático para reintentos cada 10 segundos
+- ✅ Idempotencia basada en `kafka_event_id`
 - ✅ API REST para consultas y replay manual
 - ✅ Observabilidad con Prometheus y Grafana
 - ✅ Documentación OpenAPI/Swagger
@@ -34,12 +45,13 @@ Sistema de notificaciones event-driven para Cobre. Consume eventos de Kafka, val
 - **Java 21** - Lenguaje de programación
 - **Spring Boot 3.2.0** - Framework de aplicación
 - **Maven** - Gestión de dependencias
-- **PostgreSQL 15** - Base de datos
-- **Apache Kafka** - Event streaming
+- **PostgreSQL 15** - Base de datos relacional
+- **Apache Kafka** - Event streaming platform
 - **Flyway** - Migraciones de base de datos
 - **Docker & Docker Compose** - Containerización
-- **Prometheus & Grafana** - Observabilidad
+- **Prometheus & Grafana** - Observabilidad y métricas
 - **Springdoc OpenAPI** - Documentación API
+- **Micrometer** - Métricas para Prometheus
 - **JUnit 5, Mockito, AssertJ** - Testing
 - **JaCoCo** - Code coverage
 
@@ -58,6 +70,7 @@ src/main/java/com/cobre/notifier/api/
 └── infrastructure/      # Capa de infraestructura (adaptadores)
     ├── persistence/     # Adaptadores de persistencia (JPA)
     ├── kafka/           # Adaptadores de Kafka
+    ├── scheduler/       # Scheduler para reintentos automáticos
     ├── webhook/         # Adaptadores de webhook
     └── web/             # Adaptadores web (REST API)
 ```
@@ -120,6 +133,7 @@ Para más detalles, ver [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
    - Kafka + Zookeeper
    - Prometheus
    - Grafana
+   - WireMock (para testing de webhooks)
    - Aplicación Spring Boot
 
 2. **Verificar que todo está corriendo**
@@ -155,6 +169,8 @@ SWAGGER_ENABLED=true
 NOTIFICATION_MAX_RETRIES=3
 NOTIFICATION_INITIAL_DELAY_MS=1000
 NOTIFICATION_RETRY_MULTIPLIER=2.0
+NOTIFICATION_SCHEDULER_ENABLED=true
+NOTIFICATION_SCHEDULER_DELAY_MS=10000
 
 # Webhooks
 WEBHOOK_TIMEOUT_MS=5000
@@ -180,14 +196,43 @@ make run               # Ejecutar aplicación localmente
 make docker-up         # Iniciar servicios Docker
 make docker-down       # Detener servicios Docker
 make docker-logs       # Ver logs de servicios Docker
+make health            # Verificar salud de la aplicación
 make swagger           # Abrir Swagger UI en el navegador
 ```
 
 ### Endpoints Principales
 
 #### Health Check
+
+La aplicación expone health checks en `/actuator/health` siguiendo el estándar de **Spring Boot Actuator**.
+
+**Usando curl:**
 ```bash
 curl http://localhost:8080/actuator/health
+```
+
+**Usando Make:**
+```bash
+make health
+```
+
+**Respuesta esperada:**
+```json
+{
+  "status": "UP",
+  "components": {
+    "db": {
+      "status": "UP",
+      "details": {
+        "database": "PostgreSQL",
+        "validationQuery": "isValid()"
+      }
+    },
+    "diskSpace": {
+      "status": "UP"
+    }
+  }
+}
 ```
 
 #### Swagger UI
@@ -209,14 +254,29 @@ curl http://localhost:8080/actuator/prometheus
 Obtiene todas las notificaciones con filtros opcionales.
 
 **Query Parameters:**
-- `client_id` (opcional): ID del cliente (ej: CLIENT001)
-- `status` (opcional): Estado de entrega (PENDING, SENT, FAILED, RETRYING)
-- `from_date` (opcional): Fecha desde (formato: yyyy-MM-ddTHH:mm:ss)
-- `to_date` (opcional): Fecha hasta (formato: yyyy-MM-ddTHH:mm:ss)
+- `client_id` o `clientId` (opcional): ID del cliente (ej: CLIENT001)
+- `delivery_status` o `deliveryStatus` (opcional): Estado de entrega
+  - `completed` → Notificaciones enviadas exitosamente
+  - `failed` → Notificaciones fallidas después de todos los reintentos
+  - `pending` → Notificaciones pendientes de entrega o reintento
+- `from_date` o `fromDate` (opcional): Fecha desde (formato: `yyyy-MM-ddTHH:mm:ss`)
+- `to_date` o `toDate` (opcional): Fecha hasta (formato: `yyyy-MM-ddTHH:mm:ss`)
 
-**Ejemplo:**
+**Nota:** La API acepta tanto `snake_case` (`client_id`, `delivery_status`) como `camelCase` (`clientId`, `deliveryStatus`) para mayor flexibilidad.
+
+**Ejemplo con snake_case:**
 ```bash
-curl "http://localhost:8080/notification_events?client_id=CLIENT001&status=SENT"
+curl "http://localhost:8080/notification_events?client_id=CLIENT001&delivery_status=completed"
+```
+
+**Ejemplo con camelCase:**
+```bash
+curl "http://localhost:8080/notification_events?clientId=CLIENT001&deliveryStatus=completed"
+```
+
+**Ejemplo con filtros de fecha:**
+```bash
+curl "http://localhost:8080/notification_events?from_date=2024-01-01T00:00:00&to_date=2024-12-31T23:59:59"
 ```
 
 **Respuesta:**
@@ -225,7 +285,7 @@ curl "http://localhost:8080/notification_events?client_id=CLIENT001&status=SENT"
   {
     "event_id": "123e4567-e89b-12d3-a456-426614174000",
     "event_type": "credit_card_payment",
-    "content": "Credit card payment received for $150.00",
+    "content": "{\"amount\": 150.00, \"currency\": \"USD\", \"transaction_id\": \"TXN-001\"}",
     "delivery_date": "2024-03-15T09:30:22Z",
     "delivery_status": "completed",
     "client_id": "CLIENT001"
@@ -256,11 +316,53 @@ curl http://localhost:8080/notification_events/123e4567-e89b-12d3-a456-426614174
 
 ### POST /notification_events/{notification_event_id}/replay
 
-Reintenta manualmente el envío de una notificación.
+Reintenta manualmente el envío de una notificación. Solo funciona para notificaciones que no han sido enviadas exitosamente (estados `pending` o `failed`).
 
 **Ejemplo:**
 ```bash
 curl -X POST http://localhost:8080/notification_events/123e4567-e89b-12d3-a456-426614174000/replay
+```
+
+**Respuesta (202 Accepted):**
+```json
+{
+  "event_id": "123e4567-e89b-12d3-a456-426614174000",
+  "event_type": "credit_card_payment",
+  "content": "{\"amount\": 150.00, \"currency\": \"USD\"}",
+  "delivery_date": "2024-03-15T15:45:10Z",
+  "delivery_status": "completed",
+  "client_id": "CLIENT001"
+}
+```
+
+**Errores posibles:**
+- `404 Not Found`: Notificación no encontrada
+- `400 Bad Request`: No se puede hacer replay de una notificación ya enviada exitosamente
+
+### POST /api/v1/events (Solo Desarrollo)
+
+Publica un evento directamente al topic de Kafka. **Solo disponible en perfil `dev`**.
+
+**Ejemplo:**
+```bash
+curl -X POST http://localhost:8080/api/v1/events \
+  -H "Content-Type: application/json" \
+  -d '{
+    "client_id": "CLIENT001",
+    "event_type": "credit_card_payment",
+    "content": "{\"amount\": 150.00, \"currency\": \"USD\", \"transaction_id\": \"TXN-001\"}"
+  }'
+```
+
+**Respuesta:**
+```json
+{
+  "event_id": "c51a2951-e39e-4539-bf8a-52980714e4eb",
+  "event_type": "credit_card_payment",
+  "content": "{\"amount\": 150.00, \"currency\": \"USD\", \"transaction_id\": \"TXN-001\"}",
+  "published_at": "2024-03-15T10:30:00Z",
+  "status": "published"
+}
 ```
 
 **Tipos de eventos soportados:**
@@ -276,6 +378,73 @@ curl -X POST http://localhost:8080/notification_events/123e4567-e89b-12d3-a456-4
 - `debit_subscription` - Suscripción
 
 Para documentación completa, ver Swagger UI: http://localhost:8080/swagger-ui/index.html
+
+## 🔒 Seguridad
+
+### Vulnerabilidades OWASP Top 10 Identificadas
+
+#### 1. A01:2021 – Broken Access Control
+
+**Riesgo:** La API no implementa autenticación/autorización, permitiendo que cualquier usuario acceda a todas las notificaciones.
+
+**Medidas Mitigadas:**
+- ✅ Validación de suscripciones activas antes de procesar eventos
+- ✅ Validación de que el cliente está suscrito al tipo de evento específico
+- ✅ Filtrado por `client_id` en consultas (aunque no previene acceso a otros clientes)
+
+**Medidas Propuestas:**
+- 🔄 Implementar autenticación con JWT o API Keys
+- 🔄 Implementar autorización basada en roles (RBAC)
+- 🔄 Validar que el usuario solo pueda consultar notificaciones de sus propios clientes
+- 🔄 Rate limiting por cliente/IP para prevenir abuso
+
+#### 2. A03:2021 – Injection
+
+**Riesgo:** Posibles inyecciones SQL o de comandos a través de parámetros de entrada.
+
+**Medidas Mitigadas:**
+- ✅ Uso de JPA Criteria API para queries dinámicas (previene SQL injection)
+- ✅ Uso de Prepared Statements a través de JPA/Hibernate
+- ✅ Validación de tipos de datos en parámetros de fecha
+- ✅ Sanitización de inputs en el mapeo de `delivery_status`
+
+**Medidas Propuestas:**
+- 🔄 Validación más estricta de inputs con Bean Validation (`@Valid`, `@NotNull`, `@Pattern`)
+- 🔄 Sanitización de contenido JSON antes de almacenar
+- 🔄 Implementar whitelist de caracteres permitidos en `client_id` y `event_type`
+- 🔄 Logging de intentos de injection para detección temprana
+
+#### 3. A05:2021 – Security Misconfiguration
+
+**Riesgo:** Configuración insegura de la aplicación, exposición de información sensible, y endpoints de desarrollo expuestos en producción.
+
+**Medidas Mitigadas:**
+- ✅ Swagger deshabilitado en producción (`SWAGGER_ENABLED=false`)
+- ✅ Endpoint `/api/v1/events` solo disponible en perfil `dev`
+- ✅ Health checks con detalles limitados (`show-details: when-authorized`)
+- ✅ Variables de entorno para configuración sensible
+
+**Medidas Propuestas:**
+- 🔄 Implementar HTTPS obligatorio en producción
+- 🔄 Configurar CORS restrictivo para APIs públicas
+- 🔄 Ocultar información de versión y stack en headers HTTP
+- 🔄 Implementar security headers (HSTS, X-Frame-Options, CSP)
+- 🔄 Rotación de credenciales de base de datos y Kafka
+- 🔄 Uso de secretos gestionados (AWS Secrets Manager, HashiCorp Vault)
+
+### Resumen de Seguridad
+
+| Vulnerabilidad | Estado | Prioridad |
+|---------------|--------|-----------|
+| Broken Access Control | ⚠️ Parcialmente mitigado | Alta |
+| Injection | ✅ Mitigado | Media |
+| Security Misconfiguration | ⚠️ Parcialmente mitigado | Alta |
+
+**Recomendaciones Inmediatas:**
+1. Implementar autenticación/autorización antes de producción
+2. Configurar HTTPS y security headers
+3. Implementar rate limiting
+4. Auditar y rotar credenciales regularmente
 
 ## 🐳 Docker
 
@@ -304,6 +473,7 @@ docker-compose down
 - **Swagger UI**: http://localhost:8080/swagger-ui/index.html
 - **Prometheus**: http://localhost:9090
 - **Grafana**: http://localhost:3000 (admin/admin)
+- **WireMock**: http://localhost:8089 (para testing de webhooks)
 
 ## 🧪 Testing
 
@@ -393,7 +563,7 @@ SWAGGER_ENABLED=false  # Deshabilitar en producción
 
 ### Health Checks
 
-La aplicación expone health checks en `/actuator/health` que pueden ser usados por orquestadores como Kubernetes.
+La aplicación expone health checks en `/actuator/health` que pueden ser usados por orquestadores como Kubernetes. Usa el comando `make health` para verificar el estado de la aplicación.
 
 ## 📊 Observabilidad
 
@@ -401,13 +571,20 @@ La aplicación expone health checks en `/actuator/health` que pueden ser usados 
 
 La aplicación expone métricas en `/actuator/prometheus`:
 
-- `webhook_delivery_total`: Contador de entregas de webhook
-- `webhook_delivery_duration_seconds`: Duración de entregas
-- `webhook_delivery_errors_total`: Errores de entrega
+- `kafka_publish_success_total`: Contador de publicaciones exitosas a Kafka
+- `kafka_consume_success_total`: Contador de consumos exitosos de Kafka
+- `webhook_delivery_success_total`: Contador de entregas exitosas de webhook
+- `webhook_delivery_duration_seconds`: Duración de entregas de webhook
+- `notification_retry_attempts_total`: Total de intentos de reintento
+- `notification_replay_manual_total`: Total de replays manuales
 
 ### Dashboards Grafana
 
-Los dashboards de Grafana están configurados para conectarse automáticamente a Prometheus.
+Los dashboards de Grafana están configurados para conectarse automáticamente a Prometheus y mostrar:
+- Métricas de Kafka (publicaciones y consumos)
+- Métricas de webhooks (éxitos, fallos, tiempos)
+- Métricas de reintentos y replays
+- Top clientes por volumen de notificaciones
 
 ## 🤝 Contribución
 

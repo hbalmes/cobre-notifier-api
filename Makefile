@@ -1,4 +1,4 @@
-.PHONY: help build clean test compile run docker-up docker-down rebuild migrate docs docs-build docs-stop docs-update-specs
+.PHONY: help build clean test compile run docker-up docker-down rebuild migrate docs docs-stop
 
 # Variables
 APP_NAME=cobre-notifier-api
@@ -32,14 +32,6 @@ test-coverage: ## Run tests with coverage report
 	@echo "$(YELLOW)Running tests with coverage...$(NC)"
 	@mvn clean test jacoco:report
 	@echo "$(GREEN)Coverage report generated at: target/site/jacoco/index.html$(NC)"
-
-coverage-report: ## Open coverage report in browser
-	@if [ -f target/site/jacoco/index.html ]; then \
-		echo "$(GREEN)Opening coverage report...$(NC)"; \
-		open target/site/jacoco/index.html || xdg-open target/site/jacoco/index.html || echo "$(YELLOW)Please open manually: target/site/jacoco/index.html$(NC)"; \
-	else \
-		echo "$(YELLOW)Coverage report not found. Run 'make test-coverage' first.$(NC)"; \
-	fi
 
 run: ## Run the application
 	@echo "$(GREEN)Starting application...$(NC)"
@@ -75,17 +67,6 @@ migrate: ## Run Flyway migrations
 	@echo "$(YELLOW)Running database migrations...$(NC)"
 	@mvn flyway:migrate
 
-migrate-info: ## Show Flyway migration info
-	@mvn flyway:info
-
-migrate-clean: ## Clean Flyway migrations (WARNING: drops all objects)
-	@echo "$(YELLOW)⚠️  WARNING: This will drop all database objects!$(NC)"
-	@read -p "Are you sure? [y/N] " -n 1 -r; \
-	echo; \
-	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
-		mvn flyway:clean; \
-	fi
-
 install: ## Install dependencies
 	@echo "$(YELLOW)Installing dependencies...$(NC)"
 	@mvn clean install -DskipTests
@@ -114,45 +95,11 @@ db-connect: ## Connect to PostgreSQL database
 	@echo "$(GREEN)Connecting to database...$(NC)"
 	@PGPASSWORD=$${DB_PASSWORD:-cobre_password} psql -h $${DB_HOST:-localhost} -p $${DB_PORT:-5432} -U $${DB_USER:-cobre_user} -d $${DB_NAME:-cobre_notifier}
 
-# Health checks
-health: ## Check application health
-	@echo "$(YELLOW)Checking application health...$(NC)"
-	@curl -s http://localhost:$${SERVER_PORT:-8080}/actuator/health | jq . || echo "$(YELLOW)Application not running or jq not installed$(NC)"
-
-metrics: ## Show Prometheus metrics
-	@echo "$(YELLOW)Fetching metrics...$(NC)"
-	@curl -s http://localhost:$${SERVER_PORT:-8080}/actuator/prometheus | head -20 || echo "$(YELLOW)Application not running$(NC)"
-
-# Swagger/OpenAPI
-swagger: ## Open Swagger UI in browser (macOS)
-	@open http://localhost:$${SERVER_PORT:-8080}/swagger-ui/index.html || echo "$(YELLOW)Application not running$(NC)"
-
-api-docs: ## Show API docs JSON
-	@curl -s http://localhost:$${SERVER_PORT:-8080}/api-docs | jq . || echo "$(YELLOW)Application not running or jq not installed$(NC)"
-
 docs: ## Start documentation server (Docsify)
 	@echo "$(GREEN)Starting documentation server...$(NC)"
 	@docker-compose up -d docs
 	@echo "$(GREEN)Documentation available at: http://localhost:$${DOCS_PORT:-3001}$(NC)"
 
-docs-build: ## Build documentation Docker image
-	@echo "$(YELLOW)Building documentation image...$(NC)"
-	@docker-compose build docs
-
 docs-stop: ## Stop documentation server
 	@docker-compose stop docs
-
-docs-update-specs: ## Update OpenAPI specs from running application
-	@echo "$(YELLOW)Updating OpenAPI specs...$(NC)"
-	@curl -s http://localhost:$${SERVER_PORT:-8080}/api-docs > specs/openapi.json || echo "$(YELLOW)Application not running$(NC)"
-	@echo "$(GREEN)✅ Specs updated$(NC)"
-
-# Cleanup
-clean-all: clean ## Clean everything including Docker volumes
-	@echo "$(YELLOW)Cleaning Docker volumes...$(NC)"
-	@docker-compose -f $(DOCKER_COMPOSE) down -v 2>/dev/null || true
-	@echo "$(GREEN)✅ All cleaned$(NC)"
-
-# Quick start for development
-quick-start: docker-up migrate run ## Quick start: Docker + Migrations + Run app
 

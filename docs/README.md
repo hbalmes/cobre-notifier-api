@@ -189,7 +189,6 @@ make run               # Ejecutar aplicación localmente
 make docker-up         # Iniciar servicios Docker
 make docker-down       # Detener servicios Docker
 make docker-logs       # Ver logs de servicios Docker
-make swagger           # Abrir Swagger UI en el navegador
 ```
 
 ### Endpoints Principales
@@ -202,8 +201,6 @@ curl http://localhost:8080/actuator/health
 #### Swagger UI
 ```bash
 open http://localhost:8080/swagger-ui/index.html
-# o
-make swagger
 ```
 
 #### Prometheus Metrics
@@ -325,8 +322,8 @@ make test
 # Tests con cobertura
 make test-coverage
 
-# Ver reporte de cobertura
-make coverage-report
+# Ver reporte de cobertura (abrir manualmente)
+open target/site/jacoco/index.html
 ```
 
 ### Cobertura Actual

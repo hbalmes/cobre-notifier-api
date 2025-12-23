@@ -1230,18 +1230,18 @@
       "pluginVersion": "8.0.0",
       "targets": [
         {
-          "expr": "rate(notification_delivery_duration_initial_sum[5m]) / rate(notification_delivery_duration_initial_count[5m])",
-          "legendFormat": "Tiempo Entrega Inicial (ms)",
+          "expr": "rate(webhook_delivery_duration_sum[5m]) / rate(webhook_delivery_duration_count[5m])",
+          "legendFormat": "Tiempo Entrega Promedio (ms)",
           "refId": "A"
         },
         {
           "expr": "histogram_quantile(0.95, sum(rate(webhook_delivery_duration_bucket[5m])) by (le))",
-          "legendFormat": "P95 Entrega Inicial (ms)",
+          "legendFormat": "P95 Entrega (ms)",
           "refId": "B"
         },
         {
           "expr": "histogram_quantile(0.99, sum(rate(webhook_delivery_duration_bucket[5m])) by (le))",
-          "legendFormat": "P99 Entrega Inicial (ms)",
+          "legendFormat": "P99 Entrega (ms)",
           "refId": "C"
         }
       ],

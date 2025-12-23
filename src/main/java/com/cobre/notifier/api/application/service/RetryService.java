@@ -121,19 +121,34 @@ public class RetryService implements RetryFailedNotificationsUseCase {
                     boolean canContinue = notification.incrementRetry(maxRetries);
                     
                     if (canContinue) {
-                        // Calcular delay exponencial (para logging/futuro scheduler)
-                        long delay = calculateExponentialBackoff(notification.getRetryCount());
+                        // Calcular delay exponencial basado en el retryCount actual
+                        // El retryCount ya fue incrementado, así que usamos retryCount - 1 para el cálculo
+                        long delay = calculateExponentialBackoff(notification.getRetryCount() - 1);
                         
-                        // Registrar delay en métricas
-                        retryDelayTimer.record(delay, java.util.concurrent.TimeUnit.MILLISECONDS);
+                        log.debug("Calculated delay for notification {} (retryCount: {}): {} ms", 
+                                notification.getId(), notification.getRetryCount(), delay);
                         
-                        log.debug("Calculated delay for notification {}: {} ms", 
-                                notification.getId(), delay);
-                        
-                        // Guardar estado actualizado
+                        // Guardar estado actualizado antes de aplicar el delay
                         notification = notificationEventRepository.save(notification);
                         
-                        // Procesar la notificación
+                        // Aplicar exponential backoff: esperar antes de procesar
+                        try {
+                            if (delay > 0) {
+                                log.debug("Applying exponential backoff delay of {} ms for notification {}", 
+                                        delay, notification.getId());
+                                Thread.sleep(delay);
+                                
+                                // Registrar delay en métricas después de esperar
+                                retryDelayTimer.record(delay, java.util.concurrent.TimeUnit.MILLISECONDS);
+                            }
+                        } catch (InterruptedException e) {
+                            log.warn("Interrupted while waiting for exponential backoff delay for notification {}", 
+                                    notification.getId());
+                            Thread.currentThread().interrupt();
+                            // Continuar con el procesamiento aunque se haya interrumpido
+                        }
+                        
+                        // Procesar la notificación después del delay
                         notificationService.process(notification);
                         notification = notificationEventRepository.findById(notification.getId())
                                 .orElse(notification);

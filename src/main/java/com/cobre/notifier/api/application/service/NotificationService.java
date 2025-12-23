@@ -175,7 +175,6 @@ public class NotificationService implements ProcessNotificationUseCase,
                     notificationEvent.getId(), e.getMessage());
             
             // Si es el primer intento (retryCount == 0), mantener como PENDING para que el retry service lo procese
-            // Si ya tiene reintentos, marcar como FAILED solo si alcanzó el máximo
             if (notificationEvent.getRetryCount() == 0) {
                 // Mantener como PENDING para que el retry service lo procese
                 notificationEvent.updateErrorMessage(e.getMessage());
@@ -184,8 +183,12 @@ public class NotificationService implements ProcessNotificationUseCase,
                 log.debug("Notification {} failed on initial attempt, keeping as PENDING for retry", 
                         notificationEvent.getId());
             } else {
-                // Ya tiene reintentos, marcar como fallida
-                notificationEvent.markAsFailed(e.getMessage());
+                // Ya tiene reintentos, pero NO marcar como FAILED aquí
+                // Solo actualizar el mensaje de error y mantener el estado como RETRYING
+                // El RetryService se encargará de marcarlo como FAILED cuando alcance el máximo de reintentos
+                notificationEvent.updateErrorMessage(e.getMessage());
+                log.debug("Notification {} failed on retry attempt {}, keeping as {} for next retry", 
+                        notificationEvent.getId(), notificationEvent.getRetryCount(), notificationEvent.getStatus());
             }
         }
 
@@ -224,8 +227,18 @@ public class NotificationService implements ProcessNotificationUseCase,
             
             // Validar que pertenece al cliente correcto
             if (!notification.belongsToClient(notification.getClientId())) {
+                replayFailureCounter.increment();
+                sample.stop(replayTimer);
                 throw new IllegalArgumentException(
                         "Notification does not belong to the specified client");
+            }
+
+            // No permitir replay si ya fue enviado exitosamente
+            if (notification.getStatus() == DeliveryStatus.SENT) {
+                log.warn("Attempted to replay an already SENT notification: {}", notificationId);
+                replayFailureCounter.increment();
+                sample.stop(replayTimer);
+                throw new IllegalArgumentException("Cannot replay a notification that has already been sent successfully.");
             }
 
             // Resetear para replay

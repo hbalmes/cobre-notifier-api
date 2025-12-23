@@ -76,24 +76,7 @@ package: ## Package the application
 	@mvn clean package -DskipTests
 	@echo "$(GREEN)✅ JAR created at: target/$(APP_NAME)-1.0.0-SNAPSHOT.jar$(NC)"
 
-lint: ## Run code quality checks
-	@echo "$(YELLOW)Running code quality checks...$(NC)"
-	@mvn checkstyle:check || echo "$(YELLOW)Checkstyle plugin not configured$(NC)"
-
-format: ## Format code (if formatter plugin is configured)
-	@echo "$(YELLOW)Formatting code...$(NC)"
-	@mvn formatter:format || echo "$(YELLOW)Formatter plugin not configured$(NC)"
-
-dev: docker-up run ## Start Docker containers and run the application
-
 stop: docker-down ## Stop all services
-
-restart: stop dev ## Restart all services
-
-# Database operations
-db-connect: ## Connect to PostgreSQL database
-	@echo "$(GREEN)Connecting to database...$(NC)"
-	@PGPASSWORD=$${DB_PASSWORD:-cobre_password} psql -h $${DB_HOST:-localhost} -p $${DB_PORT:-5432} -U $${DB_USER:-cobre_user} -d $${DB_NAME:-cobre_notifier}
 
 docs: ## Start documentation server (Docsify)
 	@echo "$(GREEN)Starting documentation server...$(NC)"

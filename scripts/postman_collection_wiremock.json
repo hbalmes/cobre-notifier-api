@@ -1,0 +1,403 @@
+{
+	"info": {
+		"_postman_id": "cobre-wiremock-tests",
+		"name": "Cobre Notifier - WireMock Testing",
+		"description": "Collection para probar diferentes escenarios de webhook usando WireMock",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "CLIENT001 - Éxito (200 OK)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test(\"Response has event_id\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('event_id');",
+							"    pm.expect(jsonData.status).to.eql('published');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"client_id\": \"CLIENT001\",\n  \"event_type\": \"credit_card_payment\",\n  \"content\": \"{\\\"amount\\\": 150.00, \\\"currency\\\": \\\"USD\\\", \\\"transaction_id\\\": \\\"TXN-001\\\"}\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/v1/events",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"v1",
+						"events"
+					]
+				},
+				"description": "Envía un evento para CLIENT001 que debería entregarse exitosamente (WireMock responde 200 OK)"
+			},
+			"response": []
+		},
+		{
+			"name": "CLIENT002 - Error 500",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test(\"Event published\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.status).to.eql('published');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"client_id\": \"CLIENT002\",\n  \"event_type\": \"credit_card_payment\",\n  \"content\": \"{\\\"amount\\\": 200.00, \\\"currency\\\": \\\"USD\\\", \\\"transaction_id\\\": \\\"TXN-002\\\"}\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/v1/events",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"v1",
+						"events"
+					]
+				},
+				"description": "Envía un evento para CLIENT002 que debería fallar con error 500 (WireMock responde 500) y entrar en reintentos"
+			},
+			"response": []
+		},
+		{
+			"name": "CLIENT003 - Timeout",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test(\"Event published\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.status).to.eql('published');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"client_id\": \"CLIENT003\",\n  \"event_type\": \"debit_card_withdrawal\",\n  \"content\": \"{\\\"amount\\\": 75.50, \\\"currency\\\": \\\"USD\\\", \\\"transaction_id\\\": \\\"TXN-003\\\"}\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/v1/events",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"v1",
+						"events"
+					]
+				},
+				"description": "Envía un evento para CLIENT003 que debería fallar por timeout (WireMock tiene delay de 10s, mayor que el timeout de la app)"
+			},
+			"response": []
+		},
+		{
+			"name": "CLIENT004 - Error 400",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test(\"Event published\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.status).to.eql('published');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"client_id\": \"CLIENT004\",\n  \"event_type\": \"credit_card_payment\",\n  \"content\": \"{\\\"amount\\\": 300.00, \\\"currency\\\": \\\"USD\\\", \\\"transaction_id\\\": \\\"TXN-004\\\"}\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/v1/events",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"v1",
+						"events"
+					]
+				},
+				"description": "Envía un evento para CLIENT004 que debería fallar con error 400 (WireMock responde 400) y entrar en reintentos"
+			},
+			"response": []
+		},
+		{
+			"name": "GET - Todas las notificaciones",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/notification_events",
+					"host": ["{{base_url}}"],
+					"path": ["notification_events"]
+				},
+				"description": "Obtiene todas las notificaciones sin filtros"
+			},
+			"response": []
+		},
+		{
+			"name": "GET - Notificaciones por client_id (snake_case)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/notification_events?client_id=CLIENT001",
+					"host": ["{{base_url}}"],
+					"path": ["notification_events"],
+					"query": [
+						{
+							"key": "client_id",
+							"value": "CLIENT001"
+						}
+					]
+				},
+				"description": "Obtiene notificaciones filtradas por client_id usando snake_case"
+			},
+			"response": []
+		},
+		{
+			"name": "GET - Notificaciones por clientId (camelCase)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/notification_events?clientId=CLIENT001",
+					"host": ["{{base_url}}"],
+					"path": ["notification_events"],
+					"query": [
+						{
+							"key": "clientId",
+							"value": "CLIENT001"
+						}
+					]
+				},
+				"description": "Obtiene notificaciones filtradas por clientId usando camelCase"
+			},
+			"response": []
+		},
+		{
+			"name": "GET - Notificaciones completadas",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/notification_events?delivery_status=completed",
+					"host": ["{{base_url}}"],
+					"path": ["notification_events"],
+					"query": [
+						{
+							"key": "delivery_status",
+							"value": "completed"
+						}
+					]
+				},
+				"description": "Obtiene notificaciones con estado 'completed' (enviadas exitosamente)"
+			},
+			"response": []
+		},
+		{
+			"name": "GET - Notificaciones fallidas",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/notification_events?delivery_status=failed",
+					"host": ["{{base_url}}"],
+					"path": ["notification_events"],
+					"query": [
+						{
+							"key": "delivery_status",
+							"value": "failed"
+						}
+					]
+				},
+				"description": "Obtiene notificaciones con estado 'failed' (fallidas después de todos los reintentos)"
+			},
+			"response": []
+		},
+		{
+			"name": "GET - Notificaciones pendientes",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/notification_events?delivery_status=pending",
+					"host": ["{{base_url}}"],
+					"path": ["notification_events"],
+					"query": [
+						{
+							"key": "delivery_status",
+							"value": "pending"
+						}
+					]
+				},
+				"description": "Obtiene notificaciones con estado 'pending' (pendientes de entrega o reintento)"
+			},
+			"response": []
+		},
+		{
+			"name": "GET - Notificaciones con filtros combinados",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/notification_events?client_id=CLIENT001&delivery_status=completed&from_date=2024-01-01T00:00:00&to_date=2024-12-31T23:59:59",
+					"host": ["{{base_url}}"],
+					"path": ["notification_events"],
+					"query": [
+						{
+							"key": "client_id",
+							"value": "CLIENT001"
+						},
+						{
+							"key": "delivery_status",
+							"value": "completed"
+						},
+						{
+							"key": "from_date",
+							"value": "2024-01-01T00:00:00"
+						},
+						{
+							"key": "to_date",
+							"value": "2024-12-31T23:59:59"
+						}
+					]
+				},
+				"description": "Obtiene notificaciones con múltiples filtros: client_id, delivery_status y rango de fechas"
+			},
+			"response": []
+		},
+		{
+			"name": "GET - Notificación por ID",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/notification_events/{notification_id}",
+					"host": ["{{base_url}}"],
+					"path": ["notification_events", "{notification_id}"],
+					"variable": [
+						{
+							"key": "notification_id",
+							"value": "123e4567-e89b-12d3-a456-426614174000",
+							"description": "UUID de la notificación"
+						}
+					]
+				},
+				"description": "Obtiene una notificación específica por su ID"
+			},
+			"response": []
+		},
+		{
+			"name": "POST - Replay de notificación",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/notification_events/{notification_id}/replay",
+					"host": ["{{base_url}}"],
+					"path": ["notification_events", "{notification_id}", "replay"],
+					"variable": [
+						{
+							"key": "notification_id",
+							"value": "123e4567-e89b-12d3-a456-426614174000",
+							"description": "UUID de la notificación a reintentar"
+						}
+					]
+				},
+				"description": "Reintenta manualmente el envío de una notificación. Solo funciona para notificaciones no enviadas exitosamente."
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8080",
+			"type": "string"
+		}
+	]
+}
+

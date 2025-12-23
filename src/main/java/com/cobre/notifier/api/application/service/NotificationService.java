@@ -1,0 +1,293 @@
+package com.cobre.notifier.api.application.service;
+
+import com.cobre.notifier.api.application.port.input.GetNotificationEventsUseCase;
+import com.cobre.notifier.api.application.port.input.ProcessNotificationUseCase;
+import com.cobre.notifier.api.application.port.input.ReplayNotificationUseCase;
+import com.cobre.notifier.api.application.port.output.NotificationEventRepository;
+import com.cobre.notifier.api.application.port.output.SubscriptionRepository;
+import com.cobre.notifier.api.domain.DeliveryStatus;
+import com.cobre.notifier.api.domain.NotificationEvent;
+import com.cobre.notifier.api.domain.Subscription;
+import com.cobre.notifier.api.domain.exception.InvalidSubscriptionException;
+import com.cobre.notifier.api.domain.exception.NotificationNotFoundException;
+import com.cobre.notifier.api.domain.exception.NotificationDeliveryException;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.DistributionSummary;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
+
+/**
+ * Servicio de aplicación que implementa los casos de uso relacionados con notificaciones.
+ * Coordina la lógica de negocio y la interacción con los puertos de salida.
+ */
+@Slf4j
+@Service
+public class NotificationService implements ProcessNotificationUseCase, 
+                                          GetNotificationEventsUseCase, 
+                                          ReplayNotificationUseCase {
+
+    private final NotificationEventRepository notificationEventRepository;
+    private final SubscriptionRepository subscriptionRepository;
+    private final WebhookDeliveryService webhookDeliveryService;
+    private final MeterRegistry meterRegistry;
+
+    // Métricas adicionales de reintentos
+    private final AtomicLong retrySuccessCount = new AtomicLong(0);
+    private final AtomicLong retryTotalCount = new AtomicLong(0);
+    private final DistributionSummary retryDistributionSummary;
+    
+    // Métricas de replay manual
+    private final Counter replayManualCounter;
+    private final Counter replaySuccessCounter;
+    private final Counter replayFailureCounter;
+    private final Timer replayTimer;
+    
+    // Métricas de procesamiento de notificaciones
+    private final Counter notificationProcessedCounter;
+    private final Counter notificationDeliverySuccessInitialCounter;
+    private final Counter notificationDeliveryFailedInitialCounter;
+
+    public NotificationService(NotificationEventRepository notificationEventRepository,
+                              SubscriptionRepository subscriptionRepository,
+                              WebhookDeliveryService webhookDeliveryService,
+                              MeterRegistry meterRegistry) {
+        this.notificationEventRepository = notificationEventRepository;
+        this.subscriptionRepository = subscriptionRepository;
+        this.webhookDeliveryService = webhookDeliveryService;
+        this.meterRegistry = meterRegistry;
+
+        // DistributionSummary para distribución de reintentos
+        this.retryDistributionSummary = DistributionSummary.builder("notification.retry.distribution")
+                .description("Distribution of retry count per notification")
+                .register(meterRegistry);
+
+        // Gauge para tasa de éxito después de reintentos
+        Gauge.builder("notification.retry.success_rate", 
+                () -> {
+                    long total = retryTotalCount.get();
+                    if (total == 0) return 0.0;
+                    return (double) retrySuccessCount.get() / total * 100;
+                })
+                .description("Success rate after retries (percentage)")
+                .register(meterRegistry);
+        
+        // Métricas de replay manual
+        this.replayManualCounter = Counter.builder("notification.replay.manual")
+                .description("Total number of manual replay requests")
+                .register(meterRegistry);
+        
+        this.replaySuccessCounter = Counter.builder("notification.replay.success")
+                .description("Total number of successful manual replays")
+                .register(meterRegistry);
+        
+        this.replayFailureCounter = Counter.builder("notification.replay.failure")
+                .description("Total number of failed manual replays")
+                .register(meterRegistry);
+        
+        this.replayTimer = Timer.builder("notification.replay.duration")
+                .description("Time taken to process manual replay requests")
+                .register(meterRegistry);
+        
+        // Métricas de procesamiento
+        this.notificationProcessedCounter = Counter.builder("notification.processed.total")
+                .description("Total number of notifications processed")
+                .register(meterRegistry);
+        
+        this.notificationDeliverySuccessInitialCounter = Counter.builder("notification.delivery.success.initial")
+                .description("Total number of successful initial deliveries (without retry)")
+                .register(meterRegistry);
+        
+        this.notificationDeliveryFailedInitialCounter = Counter.builder("notification.delivery.failed.initial")
+                .description("Total number of failed initial deliveries (without retry)")
+                .register(meterRegistry);
+    }
+
+    @Override
+    @Transactional
+    public NotificationEvent process(NotificationEvent notificationEvent) {
+        log.debug("Processing notification: {}", notificationEvent.getId());
+
+        // Validar suscripción
+        Subscription subscription = validateSubscription(notificationEvent.getClientId(), 
+                                                         notificationEvent.getEventType());
+
+        // Actualizar webhook URL si es necesario
+        if (!subscription.getWebhookUrl().equals(notificationEvent.getWebhookUrl())) {
+            notificationEvent = NotificationEvent.builder()
+                    .id(notificationEvent.getId())
+                    .clientId(notificationEvent.getClientId())
+                    .eventType(notificationEvent.getEventType())
+                    .payload(notificationEvent.getPayload())
+                    .webhookUrl(subscription.getWebhookUrl())
+                    .status(notificationEvent.getStatus())
+                    .retryCount(notificationEvent.getRetryCount())
+                    .createdAt(notificationEvent.getCreatedAt())
+                    .updatedAt(notificationEvent.getUpdatedAt())
+                    .sentAt(notificationEvent.getSentAt())
+                    .failedAt(notificationEvent.getFailedAt())
+                    .errorMessage(notificationEvent.getErrorMessage())
+                    .responseCode(notificationEvent.getResponseCode())
+                    .responseBody(notificationEvent.getResponseBody())
+                    .kafkaEventId(notificationEvent.getKafkaEventId())
+                    .build();
+        }
+
+        // Registrar distribución de reintentos si es un reintento
+        boolean isRetry = notificationEvent.getRetryCount() > 0;
+        if (isRetry) {
+            retryDistributionSummary.record(notificationEvent.getRetryCount());
+            retryTotalCount.incrementAndGet();
+        } else {
+            // Incrementar contador de notificaciones procesadas (solo en primer intento)
+            notificationProcessedCounter.increment();
+        }
+
+        // Intentar entrega
+        try {
+            String responseCode = webhookDeliveryService.deliver(
+                    subscription.getWebhookUrl(),
+                    notificationEvent.getPayload()
+            );
+            
+            notificationEvent.markAsSent(responseCode, "Success");
+            log.info("Notification {} delivered successfully to {}", 
+                    notificationEvent.getId(), subscription.getWebhookUrl());
+            
+            // Registrar éxito si fue un reintento
+            if (isRetry) {
+                retrySuccessCount.incrementAndGet();
+            } else {
+                // Registrar éxito en entrega inicial
+                notificationDeliverySuccessInitialCounter.increment();
+            }
+            
+        } catch (NotificationDeliveryException e) {
+            log.warn("Failed to deliver notification {}: {}", 
+                    notificationEvent.getId(), e.getMessage());
+            
+            // Si es el primer intento (retryCount == 0), mantener como PENDING para que el retry service lo procese
+            if (notificationEvent.getRetryCount() == 0) {
+                // Mantener como PENDING para que el retry service lo procese
+                notificationEvent.updateErrorMessage(e.getMessage());
+                // Registrar fallo en entrega inicial
+                notificationDeliveryFailedInitialCounter.increment();
+                log.debug("Notification {} failed on initial attempt, keeping as PENDING for retry", 
+                        notificationEvent.getId());
+            } else {
+                // Ya tiene reintentos, pero NO marcar como FAILED aquí
+                // Solo actualizar el mensaje de error y mantener el estado como RETRYING
+                // El RetryService se encargará de marcarlo como FAILED cuando alcance el máximo de reintentos
+                notificationEvent.updateErrorMessage(e.getMessage());
+                log.debug("Notification {} failed on retry attempt {}, keeping as {} for next retry", 
+                        notificationEvent.getId(), notificationEvent.getRetryCount(), notificationEvent.getStatus());
+            }
+        }
+
+        return notificationEventRepository.save(notificationEvent);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public NotificationEvent getById(UUID id) {
+        return notificationEventRepository.findById(id)
+                .orElseThrow(() -> new NotificationNotFoundException(id));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<NotificationEvent> getAll(String clientId, 
+                                         DeliveryStatus status, 
+                                         LocalDateTime fromDate, 
+                                         LocalDateTime toDate) {
+        if (clientId != null) {
+            return notificationEventRepository.findByClientId(clientId, status, fromDate, toDate);
+        }
+        return notificationEventRepository.findAll(status, fromDate, toDate);
+    }
+
+    @Override
+    @Transactional
+    public NotificationEvent replay(UUID notificationId) {
+        log.info("Replaying notification: {}", notificationId);
+        replayManualCounter.increment();
+        
+        Timer.Sample sample = Timer.start(meterRegistry);
+        
+        try {
+            NotificationEvent notification = getById(notificationId);
+            
+            // Validar que pertenece al cliente correcto
+            if (!notification.belongsToClient(notification.getClientId())) {
+                replayFailureCounter.increment();
+                sample.stop(replayTimer);
+                throw new IllegalArgumentException(
+                        "Notification does not belong to the specified client");
+            }
+
+            // No permitir replay si ya fue enviado exitosamente
+            if (notification.getStatus() == DeliveryStatus.SENT) {
+                log.warn("Attempted to replay an already SENT notification: {}", notificationId);
+                replayFailureCounter.increment();
+                sample.stop(replayTimer);
+                throw new IllegalArgumentException("Cannot replay a notification that has already been sent successfully.");
+            }
+
+            // Resetear para replay
+            notification.resetForReplay();
+            notification = notificationEventRepository.save(notification);
+
+            // Procesar nuevamente
+            NotificationEvent result = process(notification);
+            
+            sample.stop(replayTimer);
+            
+            // Verificar si el replay fue exitoso
+            if (result.getStatus() == DeliveryStatus.SENT) {
+                replaySuccessCounter.increment();
+            } else {
+                replayFailureCounter.increment();
+            }
+            
+            return result;
+        } catch (Exception e) {
+            sample.stop(replayTimer);
+            replayFailureCounter.increment();
+            throw e;
+        }
+    }
+
+    /**
+     * Valida que existe una suscripción activa para el cliente y tipo de evento.
+     * 
+     * @param clientId ID del cliente
+     * @param eventType Tipo de evento
+     * @return Suscripción válida
+     * @throws InvalidSubscriptionException si la suscripción no es válida
+     */
+    private Subscription validateSubscription(String clientId, String eventType) {
+        Subscription subscription = subscriptionRepository.findActiveByClientId(clientId)
+                .orElseThrow(() -> InvalidSubscriptionException.inactiveSubscription(clientId));
+
+        if (!subscription.canReceiveNotifications()) {
+            throw InvalidSubscriptionException.missingWebhookUrl(clientId);
+        }
+
+        if (!subscription.isSubscribedTo(eventType)) {
+            throw new InvalidSubscriptionException(
+                    String.format("Client %s is not subscribed to event type %s", 
+                            clientId, eventType));
+        }
+
+        return subscription;
+    }
+}
+

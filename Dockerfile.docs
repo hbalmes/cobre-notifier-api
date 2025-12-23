@@ -1,0 +1,14 @@
+# Dockerfile para documentación con Docsify
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Instalar docsify-cli globalmente
+RUN npm install -g docsify-cli@latest
+
+# Exponer puerto
+EXPOSE 3000
+
+# Comando para servir la documentación
+# Los archivos se montan como volumen en docker-compose
+CMD ["docsify", "serve", "docs", "--port", "3000", "--no-open"]

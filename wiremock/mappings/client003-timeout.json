@@ -1,23 +1,17 @@
 {
   "request": {
     "method": "POST",
-    "urlPathPattern": "/webhook/.*",
-    "headers": {
-      "Content-Type": {
-        "equalTo": "application/json"
-      }
-    },
-    "bodyPatterns": [
-      {
-        "matchesJsonPath": "$[?(@.client_id == 'CLIENT003')]"
-      }
-    ]
+    "urlPath": "/webhook/client003"
   },
   "response": {
     "status": 200,
     "fixedDelayMilliseconds": 10000,
-    "body": "OK"
-  },
-  "priority": 1
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "status": "success",
+      "message": "This response is intentionally delayed for CLIENT003"
+    }
+  }
 }
-

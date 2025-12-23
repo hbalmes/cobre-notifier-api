@@ -1,25 +1,16 @@
 {
   "request": {
     "method": "POST",
-    "urlPathPattern": "/webhook/.*",
-    "headers": {
-      "Content-Type": {
-        "equalTo": "application/json"
-      }
-    },
-    "bodyPatterns": [
-      {
-        "matchesJsonPath": "$[?(@.client_id == 'CLIENT001')]"
-      }
-    ]
+    "urlPath": "/webhook/client001"
   },
   "response": {
     "status": 200,
-    "body": "OK",
     "headers": {
-      "Content-Type": "text/plain"
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "status": "success",
+      "message": "Notification received by CLIENT001"
     }
-  },
-  "priority": 1
+  }
 }
-

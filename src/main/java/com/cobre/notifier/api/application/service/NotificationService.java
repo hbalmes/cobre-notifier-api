@@ -11,10 +11,11 @@ import com.cobre.notifier.api.domain.Subscription;
 import com.cobre.notifier.api.domain.exception.InvalidSubscriptionException;
 import com.cobre.notifier.api.domain.exception.NotificationNotFoundException;
 import com.cobre.notifier.api.domain.exception.NotificationDeliveryException;
+import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
-import lombok.RequiredArgsConstructor;
+import io.micrometer.core.instrument.Timer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,7 +31,6 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class NotificationService implements ProcessNotificationUseCase, 
                                           GetNotificationEventsUseCase, 
                                           ReplayNotificationUseCase {
@@ -44,6 +44,12 @@ public class NotificationService implements ProcessNotificationUseCase,
     private final AtomicLong retrySuccessCount = new AtomicLong(0);
     private final AtomicLong retryTotalCount = new AtomicLong(0);
     private final DistributionSummary retryDistributionSummary;
+    
+    // Métricas de replay manual
+    private final Counter replayManualCounter;
+    private final Counter replaySuccessCounter;
+    private final Counter replayFailureCounter;
+    private final Timer replayTimer;
 
     public NotificationService(NotificationEventRepository notificationEventRepository,
                               SubscriptionRepository subscriptionRepository,
@@ -67,6 +73,23 @@ public class NotificationService implements ProcessNotificationUseCase,
                     return (double) retrySuccessCount.get() / total * 100;
                 })
                 .description("Success rate after retries (percentage)")
+                .register(meterRegistry);
+        
+        // Métricas de replay manual
+        this.replayManualCounter = Counter.builder("notification.replay.manual")
+                .description("Total number of manual replay requests")
+                .register(meterRegistry);
+        
+        this.replaySuccessCounter = Counter.builder("notification.replay.success")
+                .description("Total number of successful manual replays")
+                .register(meterRegistry);
+        
+        this.replayFailureCounter = Counter.builder("notification.replay.failure")
+                .description("Total number of failed manual replays")
+                .register(meterRegistry);
+        
+        this.replayTimer = Timer.builder("notification.replay.duration")
+                .description("Time taken to process manual replay requests")
                 .register(meterRegistry);
     }
 
@@ -96,6 +119,7 @@ public class NotificationService implements ProcessNotificationUseCase,
                     .errorMessage(notificationEvent.getErrorMessage())
                     .responseCode(notificationEvent.getResponseCode())
                     .responseBody(notificationEvent.getResponseBody())
+                    .kafkaEventId(notificationEvent.getKafkaEventId())
                     .build();
         }
 
@@ -154,21 +178,41 @@ public class NotificationService implements ProcessNotificationUseCase,
     @Transactional
     public NotificationEvent replay(UUID notificationId) {
         log.info("Replaying notification: {}", notificationId);
+        replayManualCounter.increment();
         
-        NotificationEvent notification = getById(notificationId);
+        Timer.Sample sample = Timer.start(meterRegistry);
         
-        // Validar que pertenece al cliente correcto
-        if (!notification.belongsToClient(notification.getClientId())) {
-            throw new IllegalArgumentException(
-                    "Notification does not belong to the specified client");
+        try {
+            NotificationEvent notification = getById(notificationId);
+            
+            // Validar que pertenece al cliente correcto
+            if (!notification.belongsToClient(notification.getClientId())) {
+                throw new IllegalArgumentException(
+                        "Notification does not belong to the specified client");
+            }
+
+            // Resetear para replay
+            notification.resetForReplay();
+            notification = notificationEventRepository.save(notification);
+
+            // Procesar nuevamente
+            NotificationEvent result = process(notification);
+            
+            sample.stop(replayTimer);
+            
+            // Verificar si el replay fue exitoso
+            if (result.getStatus() == DeliveryStatus.SENT) {
+                replaySuccessCounter.increment();
+            } else {
+                replayFailureCounter.increment();
+            }
+            
+            return result;
+        } catch (Exception e) {
+            sample.stop(replayTimer);
+            replayFailureCounter.increment();
+            throw e;
         }
-
-        // Resetear para replay
-        notification.resetForReplay();
-        notification = notificationEventRepository.save(notification);
-
-        // Procesar nuevamente
-        return process(notification);
     }
 
     /**

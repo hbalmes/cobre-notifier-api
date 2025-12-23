@@ -1,11 +1,11 @@
 package com.cobre.notifier.api.infrastructure.kafka.producer;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -31,7 +31,7 @@ class KafkaEventProducerTest {
     @Mock
     private KafkaTemplate<String, String> kafkaTemplate;
 
-    @InjectMocks
+    private SimpleMeterRegistry meterRegistry;
     private KafkaEventProducer kafkaEventProducer;
 
     private static final String TOPIC = "platform.events";
@@ -39,6 +39,8 @@ class KafkaEventProducerTest {
 
     @BeforeEach
     void setUp() {
+        meterRegistry = new SimpleMeterRegistry();
+        kafkaEventProducer = new KafkaEventProducer(kafkaTemplate, meterRegistry);
         ReflectionTestUtils.setField(kafkaEventProducer, "topic", TOPIC);
     }
 

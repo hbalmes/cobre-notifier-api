@@ -159,11 +159,13 @@ class EventControllerTest {
         assertThat(deserialized.getClientId()).isEqualTo("test-client-123");
         assertThat(deserialized.getEventType()).isEqualTo("credit_card_payment");
         assertThat(deserialized.getContent()).isEqualTo("Credit card payment received for $150.00");
-        // Verificar que el mensaje publicado solo contiene los campos requeridos
+        // Verificar que el mensaje publicado contiene los campos requeridos
         assertThat(publishedMessage).contains("client_id");
         assertThat(publishedMessage).contains("event_type");
         assertThat(publishedMessage).contains("content");
-        assertThat(publishedMessage).doesNotContain("event_id");
+        // event_id ahora se incluye en el mensaje de Kafka para tracking
+        assertThat(publishedMessage).contains("event_id");
+        assertThat(deserialized.getEventId()).isNotNull();
         assertThat(publishedMessage).doesNotContain("published_at");
         assertThat(publishedMessage).doesNotContain("status");
         

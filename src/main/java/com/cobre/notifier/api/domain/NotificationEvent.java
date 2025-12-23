@@ -32,6 +32,7 @@ public class NotificationEvent {
     private String errorMessage;
     private String responseCode;
     private String responseBody;
+    private String kafkaEventId; // Opcional: UUID del evento de Kafka para tracking
 
     /**
      * Crea una nueva instancia de NotificationEvent con estado inicial.
@@ -43,6 +44,20 @@ public class NotificationEvent {
      * @return Nueva instancia de NotificationEvent
      */
     public static NotificationEvent create(String clientId, String eventType, String payload, String webhookUrl) {
+        return create(clientId, eventType, payload, webhookUrl, null);
+    }
+
+    /**
+     * Crea una nueva instancia de NotificationEvent con estado inicial y kafka_event_id opcional.
+     * 
+     * @param clientId ID del cliente
+     * @param eventType Tipo de evento
+     * @param payload Payload del evento (JSON)
+     * @param webhookUrl URL del webhook donde enviar la notificación
+     * @param kafkaEventId UUID opcional del evento de Kafka para tracking
+     * @return Nueva instancia de NotificationEvent
+     */
+    public static NotificationEvent create(String clientId, String eventType, String payload, String webhookUrl, String kafkaEventId) {
         return NotificationEvent.builder()
                 .id(UUID.randomUUID())
                 .clientId(clientId)
@@ -53,6 +68,7 @@ public class NotificationEvent {
                 .retryCount(0)
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
+                .kafkaEventId(kafkaEventId)
                 .build();
     }
 

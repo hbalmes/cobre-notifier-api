@@ -85,8 +85,9 @@ public class EventController {
             log.info("Publishing test event: clientId={}, eventType={}", 
                     event.getClientId(), event.getEventType());
             
-            // Generar event_id único
+            // Generar event_id único y agregarlo al mensaje para tracking
             String eventId = UUID.randomUUID().toString();
+            event.setEventId(eventId);
             
             // Fecha de publicación en formato ISO-8601 UTC
             String publishedAt = Instant.now()

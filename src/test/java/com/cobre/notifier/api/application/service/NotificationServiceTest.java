@@ -7,11 +7,11 @@ import com.cobre.notifier.api.domain.NotificationEvent;
 import com.cobre.notifier.api.domain.Subscription;
 import com.cobre.notifier.api.domain.exception.InvalidSubscriptionException;
 import com.cobre.notifier.api.domain.exception.NotificationNotFoundException;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -42,7 +42,7 @@ class NotificationServiceTest {
     @Mock
     private WebhookDeliveryService webhookDeliveryService;
 
-    @InjectMocks
+    private SimpleMeterRegistry meterRegistry;
     private NotificationService notificationService;
 
     private static final String CLIENT_ID = "client-123";
@@ -55,6 +55,17 @@ class NotificationServiceTest {
 
     @BeforeEach
     void setUp() {
+        // Usar SimpleMeterRegistry real para tests
+        meterRegistry = new SimpleMeterRegistry();
+        
+        // Crear instancia real de NotificationService con mocks
+        notificationService = new NotificationService(
+                notificationEventRepository,
+                subscriptionRepository,
+                webhookDeliveryService,
+                meterRegistry
+        );
+        
         notification = NotificationEvent.create(CLIENT_ID, EVENT_TYPE, PAYLOAD, WEBHOOK_URL);
         subscription = Subscription.create(CLIENT_ID, List.of(EVENT_TYPE), WEBHOOK_URL);
     }

@@ -30,6 +30,7 @@ public class NotificationEventMapper {
                 .errorMessage(domain.getErrorMessage())
                 .responseCode(domain.getResponseCode())
                 .responseBody(domain.getResponseBody())
+                .kafkaEventId(domain.getKafkaEventId())
                 .build();
     }
 
@@ -53,6 +54,7 @@ public class NotificationEventMapper {
                 .errorMessage(entity.getErrorMessage())
                 .responseCode(entity.getResponseCode())
                 .responseBody(entity.getResponseBody())
+                .kafkaEventId(entity.getKafkaEventId())
                 .build();
     }
 }

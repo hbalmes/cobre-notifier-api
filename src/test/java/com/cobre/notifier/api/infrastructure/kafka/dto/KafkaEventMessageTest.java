@@ -97,14 +97,16 @@ class KafkaEventMessageTest {
         String clientId = "client-456";
         String eventType = "credit_transfer";
         String content = "Bank transfer received from Account #4567 for $1,500.00";
+        String eventId = "event-123";
 
         // When
-        KafkaEventMessage message = new KafkaEventMessage(clientId, eventType, content);
+        KafkaEventMessage message = new KafkaEventMessage(clientId, eventType, content, eventId);
 
         // Then
         assertThat(message.getClientId()).isEqualTo(clientId);
         assertThat(message.getEventType()).isEqualTo(eventType);
         assertThat(message.getContent()).isEqualTo(content);
+        assertThat(message.getEventId()).isEqualTo(eventId);
     }
 
     @Test

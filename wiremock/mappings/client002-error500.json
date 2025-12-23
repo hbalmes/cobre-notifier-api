@@ -1,25 +1,16 @@
 {
   "request": {
     "method": "POST",
-    "urlPathPattern": "/webhook/.*",
-    "headers": {
-      "Content-Type": {
-        "equalTo": "application/json"
-      }
-    },
-    "bodyPatterns": [
-      {
-        "matchesJsonPath": "$[?(@.client_id == 'CLIENT002')]"
-      }
-    ]
+    "urlPath": "/webhook/client002"
   },
   "response": {
     "status": 500,
-    "body": "Internal Server Error",
     "headers": {
-      "Content-Type": "text/plain"
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "status": "error",
+      "message": "Internal Server Error from CLIENT002 webhook"
     }
-  },
-  "priority": 1
+  }
 }
-

@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
  * DTO que representa un mensaje de evento recibido desde Kafka.
  * Mapea el formato del evento desde el topic platform.events.
  * El cliente solo debe enviar: client_id, event_type y content.
+ * El campo event_id es opcional y se usa para tracking cuando se publica desde el endpoint de testing.
  */
 @Data
 @Builder
@@ -25,5 +26,8 @@ public class KafkaEventMessage {
 
     @JsonProperty("content")
     private String content;
+
+    @JsonProperty("event_id")
+    private String eventId; // Opcional: UUID del evento para tracking
 }
 

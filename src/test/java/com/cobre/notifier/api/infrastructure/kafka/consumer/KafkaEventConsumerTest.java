@@ -7,11 +7,11 @@ import com.cobre.notifier.api.domain.Subscription;
 import com.cobre.notifier.api.domain.exception.InvalidSubscriptionException;
 import com.cobre.notifier.api.infrastructure.kafka.dto.KafkaEventMessage;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.kafka.support.Acknowledgment;
@@ -45,7 +45,7 @@ class KafkaEventConsumerTest {
     @Mock
     private Acknowledgment acknowledgment;
 
-    @InjectMocks
+    private SimpleMeterRegistry meterRegistry;
     private KafkaEventConsumer kafkaEventConsumer;
 
     private static final String CLIENT_ID = "client-123";
@@ -60,6 +60,14 @@ class KafkaEventConsumerTest {
 
     @BeforeEach
     void setUp() throws Exception {
+        meterRegistry = new SimpleMeterRegistry();
+        kafkaEventConsumer = new KafkaEventConsumer(
+                processNotificationUseCase,
+                subscriptionRepository,
+                objectMapper,
+                meterRegistry
+        );
+        
         eventMessage = KafkaEventMessage.builder()
                 .clientId(CLIENT_ID)
                 .eventType(EVENT_TYPE)

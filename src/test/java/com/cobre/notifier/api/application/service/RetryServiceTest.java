@@ -3,6 +3,7 @@ package com.cobre.notifier.api.application.service;
 import com.cobre.notifier.api.application.port.output.NotificationEventRepository;
 import com.cobre.notifier.api.domain.DeliveryStatus;
 import com.cobre.notifier.api.domain.NotificationEvent;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -32,7 +33,8 @@ class RetryServiceTest {
     @Mock
     private NotificationService notificationService;
 
-    @InjectMocks
+    private SimpleMeterRegistry meterRegistry;
+
     private RetryService retryService;
 
     private static final String CLIENT_ID = "client-123";
@@ -45,6 +47,12 @@ class RetryServiceTest {
 
     @BeforeEach
     void setUp() {
+        // Usar SimpleMeterRegistry real para tests (más simple que mockear todo)
+        meterRegistry = new SimpleMeterRegistry();
+        
+        // Crear instancia real de RetryService con mocks
+        retryService = new RetryService(notificationEventRepository, notificationService, meterRegistry);
+        
         // Configurar valores de @Value usando ReflectionTestUtils
         ReflectionTestUtils.setField(retryService, "maxRetries", 3);
         ReflectionTestUtils.setField(retryService, "initialDelayMs", 1000L);

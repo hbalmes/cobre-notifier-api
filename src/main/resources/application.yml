@@ -72,6 +72,11 @@ management:
         enabled: true
     tags:
       application: ${spring.application.name}
+    kafka:
+      consumer:
+        enabled: true
+      producer:
+        enabled: true
 
 # Logging Configuration
 logging:

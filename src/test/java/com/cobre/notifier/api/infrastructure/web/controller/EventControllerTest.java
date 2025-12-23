@@ -53,9 +53,8 @@ class EventControllerTest {
         
         testEvent = KafkaEventMessage.builder()
                 .clientId("test-client-123")
-                .eventType("payment.completed")
-                .payload("{\"amount\":1000}")
-                .timestamp(System.currentTimeMillis())
+                .eventType("credit_card_payment")
+                .content("Credit card payment received for $150.00")
                 .build();
     }
 
@@ -70,11 +69,13 @@ class EventControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(testEvent)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("success"))
-                .andExpect(jsonPath("$.message").value("Event published to Kafka"))
-                .andExpect(jsonPath("$.clientId").value("test-client-123"))
-                .andExpect(jsonPath("$.eventType").value("payment.completed"))
-                .andExpect(jsonPath("$.topic").value("platform.events"));
+                .andExpect(jsonPath("$.event_id").exists())
+                .andExpect(jsonPath("$.event_id").isNotEmpty())
+                .andExpect(jsonPath("$.event_type").value("credit_card_payment"))
+                .andExpect(jsonPath("$.content").value("Credit card payment received for $150.00"))
+                .andExpect(jsonPath("$.published_at").exists())
+                .andExpect(jsonPath("$.published_at").isNotEmpty())
+                .andExpect(jsonPath("$.status").value("published"));
 
         verify(kafkaEventProducer, times(1)).publishEvent(anyString());
     }
@@ -121,8 +122,7 @@ class EventControllerTest {
         KafkaEventMessage eventWithNulls = KafkaEventMessage.builder()
                 .clientId(null)
                 .eventType(null)
-                .payload("{\"test\":\"data\"}")
-                .timestamp(System.currentTimeMillis())
+                .content("Monthly utility bill payment of $85.50")
                 .build();
         
         doNothing().when(kafkaEventProducer).publishEvent(anyString());
@@ -132,9 +132,9 @@ class EventControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(eventWithNulls)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("success"))
-                .andExpect(jsonPath("$.clientId").value(""))
-                .andExpect(jsonPath("$.eventType").value(""));
+                .andExpect(jsonPath("$.event_id").exists())
+                .andExpect(jsonPath("$.status").value("published"))
+                .andExpect(jsonPath("$.event_type").value(""));
 
         verify(kafkaEventProducer, times(1)).publishEvent(anyString());
     }
@@ -157,8 +157,17 @@ class EventControllerTest {
         KafkaEventMessage deserialized = objectMapper.readValue(publishedMessage, KafkaEventMessage.class);
         
         assertThat(deserialized.getClientId()).isEqualTo("test-client-123");
-        assertThat(deserialized.getEventType()).isEqualTo("payment.completed");
-        assertThat(deserialized.getPayload()).isEqualTo("{\"amount\":1000}");
+        assertThat(deserialized.getEventType()).isEqualTo("credit_card_payment");
+        assertThat(deserialized.getContent()).isEqualTo("Credit card payment received for $150.00");
+        // Verificar que el mensaje publicado contiene los campos requeridos
+        assertThat(publishedMessage).contains("client_id");
+        assertThat(publishedMessage).contains("event_type");
+        assertThat(publishedMessage).contains("content");
+        // event_id ahora se incluye en el mensaje de Kafka para tracking
+        assertThat(publishedMessage).contains("event_id");
+        assertThat(deserialized.getEventId()).isNotNull();
+        assertThat(publishedMessage).doesNotContain("published_at");
+        assertThat(publishedMessage).doesNotContain("status");
         
         verify(kafkaEventProducer, times(1)).publishEvent(anyString());
     }

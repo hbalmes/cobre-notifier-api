@@ -73,6 +73,9 @@ public class NotificationEventEntity {
     @Column(name = "response_body", columnDefinition = "TEXT")
     private String responseBody;
 
+    @Column(name = "kafka_event_id", length = 255)
+    private String kafkaEventId;
+
     @PreUpdate
     public void preUpdate() {
         this.updatedAt = LocalDateTime.now();

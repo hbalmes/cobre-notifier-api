@@ -1,18 +1,15 @@
 package com.cobre.notifier.api.infrastructure.web.dto;
 
-import com.cobre.notifier.api.domain.DeliveryStatus;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
-import java.util.UUID;
-
 /**
  * DTO de respuesta para NotificationEvent.
- * Representa la información de una notificación que se expone a través de la API REST.
+ * Representa la información de un evento de notificación según la estructura del challenge.
  */
 @Data
 @Builder
@@ -21,46 +18,31 @@ import java.util.UUID;
 @Schema(description = "Información de un evento de notificación")
 public class NotificationEventResponse {
 
-    @Schema(description = "ID único de la notificación", example = "123e4567-e89b-12d3-a456-426614174000")
-    private UUID id;
+    @JsonProperty("event_id")
+    @Schema(description = "ID único del evento", example = "123e4567-e89b-12d3-a456-426614174000")
+    private String eventId;
 
-    @Schema(description = "ID del cliente", example = "client-123")
-    private String clientId;
-
-    @Schema(description = "Tipo de evento", example = "payment.completed")
+    @JsonProperty("event_type")
+    @Schema(description = "Tipo de evento", example = "credit_card_payment", allowableValues = {
+            "credit_card_payment", "debit_card_withdrawal", "credit_transfer", "debit_automatic_payment",
+            "credit_refund", "debit_transfer", "credit_deposit", "debit_purchase", "credit_cashback", "debit_subscription"
+    })
     private String eventType;
 
-    @Schema(description = "Payload del evento en formato JSON", example = "{\"amount\":1000.0}")
-    private String payload;
+    @JsonProperty("content")
+    @Schema(description = "Contenido del evento", example = "Credit card payment received for $150.00")
+    private String content;
 
-    @Schema(description = "URL del webhook donde se envió la notificación", example = "https://example.com/webhook")
-    private String webhookUrl;
+    @JsonProperty("delivery_date")
+    @Schema(description = "Fecha de entrega (ISO-8601)", example = "2024-03-15T14:30:55Z")
+    private String deliveryDate;
 
-    @Schema(description = "Estado de entrega de la notificación", example = "SENT")
-    private DeliveryStatus status;
+    @JsonProperty("delivery_status")
+    @Schema(description = "Estado de entrega", example = "completed", allowableValues = {"completed", "failed", "pending"})
+    private String deliveryStatus;
 
-    @Schema(description = "Número de reintentos realizados", example = "0")
-    private Integer retryCount;
-
-    @Schema(description = "Fecha y hora de creación")
-    private LocalDateTime createdAt;
-
-    @Schema(description = "Fecha y hora de última actualización")
-    private LocalDateTime updatedAt;
-
-    @Schema(description = "Fecha y hora de envío exitoso (null si no se ha enviado)")
-    private LocalDateTime sentAt;
-
-    @Schema(description = "Fecha y hora de fallo (null si no ha fallado)")
-    private LocalDateTime failedAt;
-
-    @Schema(description = "Mensaje de error (null si no hay error)")
-    private String errorMessage;
-
-    @Schema(description = "Código de respuesta HTTP del webhook", example = "200")
-    private String responseCode;
-
-    @Schema(description = "Cuerpo de la respuesta del webhook")
-    private String responseBody;
+    @JsonProperty("client_id")
+    @Schema(description = "ID del cliente", example = "CLIENT001")
+    private String clientId;
 }
 

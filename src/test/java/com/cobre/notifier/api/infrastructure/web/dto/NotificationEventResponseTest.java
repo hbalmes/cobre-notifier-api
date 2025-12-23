@@ -1,11 +1,7 @@
 package com.cobre.notifier.api.infrastructure.web.dto;
 
-import com.cobre.notifier.api.domain.DeliveryStatus;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-
-import java.time.LocalDateTime;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -20,117 +16,85 @@ class NotificationEventResponseTest {
 
         // Then
         assertThat(response).isNotNull();
-        assertThat(response.getId()).isNull();
+        assertThat(response.getEventId()).isNull();
         assertThat(response.getClientId()).isNull();
         assertThat(response.getEventType()).isNull();
-        assertThat(response.getPayload()).isNull();
-        assertThat(response.getWebhookUrl()).isNull();
-        assertThat(response.getStatus()).isNull();
-        assertThat(response.getRetryCount()).isNull();
+        assertThat(response.getContent()).isNull();
+        assertThat(response.getDeliveryDate()).isNull();
+        assertThat(response.getDeliveryStatus()).isNull();
     }
 
     @Test
     @DisplayName("Should create NotificationEventResponse with all-args constructor")
     void shouldCreateNotificationEventResponseWithAllArgsConstructor() {
         // Given
-        UUID id = UUID.randomUUID();
-        LocalDateTime now = LocalDateTime.now();
-        String clientId = "client-123";
-        String eventType = "payment.completed";
-        String payload = "{\"amount\":1000}";
-        String webhookUrl = "https://example.com/webhook";
-        DeliveryStatus status = DeliveryStatus.SENT;
-        Integer retryCount = 0;
+        String eventId = "123e4567-e89b-12d3-a456-426614174000";
+        String clientId = "CLIENT001";
+        String eventType = "credit_card_payment";
+        String content = "Payment received for $150.00";
+        String deliveryDate = "2024-03-15T14:30:55Z";
+        String deliveryStatus = "completed";
 
         // When
         NotificationEventResponse response = new NotificationEventResponse(
-                id, clientId, eventType, payload, webhookUrl, status, retryCount,
-                now, now, now, null, null, "200", "OK"
+                eventId, eventType, content, deliveryDate, deliveryStatus, clientId
         );
 
         // Then
-        assertThat(response.getId()).isEqualTo(id);
+        assertThat(response.getEventId()).isEqualTo(eventId);
         assertThat(response.getClientId()).isEqualTo(clientId);
         assertThat(response.getEventType()).isEqualTo(eventType);
-        assertThat(response.getPayload()).isEqualTo(payload);
-        assertThat(response.getWebhookUrl()).isEqualTo(webhookUrl);
-        assertThat(response.getStatus()).isEqualTo(status);
-        assertThat(response.getRetryCount()).isEqualTo(retryCount);
-        assertThat(response.getCreatedAt()).isEqualTo(now);
-        assertThat(response.getUpdatedAt()).isEqualTo(now);
-        assertThat(response.getSentAt()).isEqualTo(now);
-        assertThat(response.getFailedAt()).isNull();
-        assertThat(response.getErrorMessage()).isNull();
-        assertThat(response.getResponseCode()).isEqualTo("200");
-        assertThat(response.getResponseBody()).isEqualTo("OK");
+        assertThat(response.getContent()).isEqualTo(content);
+        assertThat(response.getDeliveryDate()).isEqualTo(deliveryDate);
+        assertThat(response.getDeliveryStatus()).isEqualTo(deliveryStatus);
     }
 
     @Test
     @DisplayName("Should create NotificationEventResponse with builder")
     void shouldCreateNotificationEventResponseWithBuilder() {
         // Given
-        UUID id = UUID.randomUUID();
-        LocalDateTime now = LocalDateTime.now();
+        String eventId = "123e4567-e89b-12d3-a456-426614174000";
 
         // When
         NotificationEventResponse response = NotificationEventResponse.builder()
-                .id(id)
-                .clientId("client-123")
-                .eventType("payment.completed")
-                .payload("{\"amount\":1000}")
-                .webhookUrl("https://example.com/webhook")
-                .status(DeliveryStatus.SENT)
-                .retryCount(0)
-                .createdAt(now)
-                .updatedAt(now)
-                .sentAt(now)
-                .failedAt(null)
-                .errorMessage(null)
-                .responseCode("200")
-                .responseBody("OK")
+                .eventId(eventId)
+                .clientId("CLIENT001")
+                .eventType("credit_card_payment")
+                .content("Payment received for $150.00")
+                .deliveryDate("2024-03-15T14:30:55Z")
+                .deliveryStatus("completed")
                 .build();
 
         // Then
-        assertThat(response.getId()).isEqualTo(id);
-        assertThat(response.getClientId()).isEqualTo("client-123");
-        assertThat(response.getEventType()).isEqualTo("payment.completed");
-        assertThat(response.getStatus()).isEqualTo(DeliveryStatus.SENT);
-        assertThat(response.getRetryCount()).isEqualTo(0);
+        assertThat(response.getEventId()).isEqualTo(eventId);
+        assertThat(response.getClientId()).isEqualTo("CLIENT001");
+        assertThat(response.getEventType()).isEqualTo("credit_card_payment");
+        assertThat(response.getContent()).isEqualTo("Payment received for $150.00");
+        assertThat(response.getDeliveryDate()).isEqualTo("2024-03-15T14:30:55Z");
+        assertThat(response.getDeliveryStatus()).isEqualTo("completed");
     }
 
     @Test
     @DisplayName("Should create NotificationEventResponse with builder and failed state")
     void shouldCreateNotificationEventResponseWithBuilderAndFailedState() {
         // Given
-        UUID id = UUID.randomUUID();
-        LocalDateTime now = LocalDateTime.now();
+        String eventId = "123e4567-e89b-12d3-a456-426614174000";
 
         // When
         NotificationEventResponse response = NotificationEventResponse.builder()
-                .id(id)
-                .clientId("client-456")
-                .eventType("payment.failed")
-                .payload("{\"error\":\"insufficient_funds\"}")
-                .webhookUrl("https://example.com/webhook")
-                .status(DeliveryStatus.FAILED)
-                .retryCount(3)
-                .createdAt(now.minusHours(1))
-                .updatedAt(now)
-                .sentAt(null)
-                .failedAt(now)
-                .errorMessage("Maximum retry attempts reached")
-                .responseCode(null)
-                .responseBody(null)
+                .eventId(eventId)
+                .clientId("CLIENT002")
+                .eventType("credit_transfer")
+                .content("Payment failed: insufficient funds")
+                .deliveryDate("2024-03-15T11:20:18Z")
+                .deliveryStatus("failed")
                 .build();
 
         // Then
-        assertThat(response.getStatus()).isEqualTo(DeliveryStatus.FAILED);
-        assertThat(response.getRetryCount()).isEqualTo(3);
-        assertThat(response.getFailedAt()).isEqualTo(now);
-        assertThat(response.getErrorMessage()).isEqualTo("Maximum retry attempts reached");
-        assertThat(response.getSentAt()).isNull();
-        assertThat(response.getResponseCode()).isNull();
-        assertThat(response.getResponseBody()).isNull();
+        assertThat(response.getDeliveryStatus()).isEqualTo("failed");
+        assertThat(response.getClientId()).isEqualTo("CLIENT002");
+        assertThat(response.getEventType()).isEqualTo("credit_transfer");
+        assertThat(response.getContent()).isEqualTo("Payment failed: insufficient funds");
     }
 
     @Test
@@ -138,62 +102,50 @@ class NotificationEventResponseTest {
     void shouldSetAndGetAllFields() {
         // Given
         NotificationEventResponse response = new NotificationEventResponse();
-        UUID id = UUID.randomUUID();
-        LocalDateTime now = LocalDateTime.now();
+        String eventId = "123e4567-e89b-12d3-a456-426614174000";
 
         // When
-        response.setId(id);
-        response.setClientId("client-789");
-        response.setEventType("payment.pending");
-        response.setPayload("{\"status\":\"processing\"}");
-        response.setWebhookUrl("https://example.com/webhook");
-        response.setStatus(DeliveryStatus.RETRYING);
-        response.setRetryCount(2);
-        response.setCreatedAt(now);
-        response.setUpdatedAt(now);
-        response.setSentAt(null);
-        response.setFailedAt(null);
-        response.setErrorMessage(null);
-        response.setResponseCode(null);
-        response.setResponseBody(null);
+        response.setEventId(eventId);
+        response.setClientId("CLIENT003");
+        response.setEventType("debit_automatic_payment");
+        response.setContent("Payment is being processed");
+        response.setDeliveryDate("2024-03-15T12:05:33Z");
+        response.setDeliveryStatus("pending");
 
         // Then
-        assertThat(response.getId()).isEqualTo(id);
-        assertThat(response.getClientId()).isEqualTo("client-789");
-        assertThat(response.getEventType()).isEqualTo("payment.pending");
-        assertThat(response.getPayload()).isEqualTo("{\"status\":\"processing\"}");
-        assertThat(response.getWebhookUrl()).isEqualTo("https://example.com/webhook");
-        assertThat(response.getStatus()).isEqualTo(DeliveryStatus.RETRYING);
-        assertThat(response.getRetryCount()).isEqualTo(2);
-        assertThat(response.getCreatedAt()).isEqualTo(now);
-        assertThat(response.getUpdatedAt()).isEqualTo(now);
+        assertThat(response.getEventId()).isEqualTo(eventId);
+        assertThat(response.getClientId()).isEqualTo("CLIENT003");
+        assertThat(response.getEventType()).isEqualTo("debit_automatic_payment");
+        assertThat(response.getContent()).isEqualTo("Payment is being processed");
+        assertThat(response.getDeliveryDate()).isEqualTo("2024-03-15T12:05:33Z");
+        assertThat(response.getDeliveryStatus()).isEqualTo("pending");
     }
 
     @Test
     @DisplayName("Should test equals and hashCode")
     void shouldTestEqualsAndHashCode() {
         // Given
-        UUID id = UUID.randomUUID();
+        String eventId = "123e4567-e89b-12d3-a456-426614174000";
 
         NotificationEventResponse response1 = NotificationEventResponse.builder()
-                .id(id)
-                .clientId("client-123")
-                .eventType("payment.completed")
-                .status(DeliveryStatus.SENT)
+                .eventId(eventId)
+                .clientId("CLIENT001")
+                .eventType("credit_card_payment")
+                .deliveryStatus("completed")
                 .build();
 
         NotificationEventResponse response2 = NotificationEventResponse.builder()
-                .id(id)
-                .clientId("client-123")
-                .eventType("payment.completed")
-                .status(DeliveryStatus.SENT)
+                .eventId(eventId)
+                .clientId("CLIENT001")
+                .eventType("credit_card_payment")
+                .deliveryStatus("completed")
                 .build();
 
         NotificationEventResponse response3 = NotificationEventResponse.builder()
-                .id(UUID.randomUUID())
-                .clientId("client-123")
-                .eventType("payment.completed")
-                .status(DeliveryStatus.SENT)
+                .eventId("987e6543-e21b-34d5-c678-901234567890")
+                .clientId("CLIENT001")
+                .eventType("credit_card_payment")
+                .deliveryStatus("completed")
                 .build();
 
         // Then
@@ -206,12 +158,12 @@ class NotificationEventResponseTest {
     @DisplayName("Should test toString")
     void shouldTestToString() {
         // Given
-        UUID id = UUID.randomUUID();
+        String eventId = "123e4567-e89b-12d3-a456-426614174000";
         NotificationEventResponse response = NotificationEventResponse.builder()
-                .id(id)
-                .clientId("client-123")
-                .eventType("payment.completed")
-                .status(DeliveryStatus.SENT)
+                .eventId(eventId)
+                .clientId("CLIENT001")
+                .eventType("credit_card_payment")
+                .deliveryStatus("completed")
                 .build();
 
         // When
@@ -219,24 +171,25 @@ class NotificationEventResponseTest {
 
         // Then
         assertThat(toString).isNotNull();
-        assertThat(toString).contains(id.toString());
-        assertThat(toString).contains("client-123");
-        assertThat(toString).contains("payment.completed");
-        assertThat(toString).contains("SENT");
+        assertThat(toString).contains(eventId);
+        assertThat(toString).contains("CLIENT001");
+        assertThat(toString).contains("credit_card_payment");
+        assertThat(toString).contains("completed");
     }
 
     @Test
-    @DisplayName("Should handle all DeliveryStatus values")
+    @DisplayName("Should handle all delivery status values")
     void shouldHandleAllDeliveryStatusValues() {
         // Given & When & Then
-        for (DeliveryStatus status : DeliveryStatus.values()) {
+        String[] statuses = {"completed", "failed", "pending"};
+        
+        for (String status : statuses) {
             NotificationEventResponse response = NotificationEventResponse.builder()
-                    .id(UUID.randomUUID())
-                    .status(status)
+                    .eventId("123e4567-e89b-12d3-a456-426614174000")
+                    .deliveryStatus(status)
                     .build();
 
-            assertThat(response.getStatus()).isEqualTo(status);
+            assertThat(response.getDeliveryStatus()).isEqualTo(status);
         }
     }
 }
-

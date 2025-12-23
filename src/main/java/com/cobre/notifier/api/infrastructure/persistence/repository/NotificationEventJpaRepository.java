@@ -3,6 +3,7 @@ package com.cobre.notifier.api.infrastructure.persistence.repository;
 import com.cobre.notifier.api.domain.DeliveryStatus;
 import com.cobre.notifier.api.infrastructure.persistence.entity.NotificationEventEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -16,35 +17,7 @@ import java.util.UUID;
  * Proporciona métodos de consulta automáticos y personalizados.
  */
 @Repository
-public interface NotificationEventJpaRepository extends JpaRepository<NotificationEventEntity, UUID> {
-
-    /**
-     * Busca notificaciones por cliente con filtros opcionales.
-     */
-    @Query("SELECT n FROM NotificationEventEntity n WHERE " +
-           "n.clientId = :clientId AND " +
-           "(:status IS NULL OR n.status = :status) AND " +
-           "(:fromDate IS NULL OR n.createdAt >= :fromDate) AND " +
-           "(:toDate IS NULL OR n.createdAt <= :toDate) " +
-           "ORDER BY n.createdAt DESC")
-    List<NotificationEventEntity> findByClientIdWithFilters(
-            @Param("clientId") String clientId,
-            @Param("status") DeliveryStatus status,
-            @Param("fromDate") LocalDateTime fromDate,
-            @Param("toDate") LocalDateTime toDate);
-
-    /**
-     * Busca todas las notificaciones con filtros opcionales.
-     */
-    @Query("SELECT n FROM NotificationEventEntity n WHERE " +
-           "(:status IS NULL OR n.status = :status) AND " +
-           "(:fromDate IS NULL OR n.createdAt >= :fromDate) AND " +
-           "(:toDate IS NULL OR n.createdAt <= :toDate) " +
-           "ORDER BY n.createdAt DESC")
-    List<NotificationEventEntity> findAllWithFilters(
-            @Param("status") DeliveryStatus status,
-            @Param("fromDate") LocalDateTime fromDate,
-            @Param("toDate") LocalDateTime toDate);
+public interface NotificationEventJpaRepository extends JpaRepository<NotificationEventEntity, UUID>, JpaSpecificationExecutor<NotificationEventEntity> {
 
     /**
      * Busca notificaciones pendientes de reintento.

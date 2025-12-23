@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/notification_events")
+@RequestMapping("/notification_events")
 @RequiredArgsConstructor
 @Tag(name = "Notification Events", description = "API para gestionar eventos de notificación")
 public class NotificationEventController {
@@ -41,7 +41,7 @@ public class NotificationEventController {
     /**
      * Obtiene todas las notificaciones con filtros opcionales.
      * 
-     * GET /api/v1/notification_events?client_id=xxx&status=SENT&from_date=2024-01-01T00:00:00&to_date=2024-12-31T23:59:59
+     * GET /notification_events?client_id=xxx&status=SENT&from_date=2024-01-01T00:00:00&to_date=2024-12-31T23:59:59
      * 
      * @param filters Filtros opcionales (clientId, status, fromDate, toDate)
      * @return Lista de notificaciones que cumplen los criterios
@@ -80,9 +80,9 @@ public class NotificationEventController {
     /**
      * Obtiene una notificación por su ID.
      * 
-     * GET /api/v1/notification_events/{id}
+     * GET /notification_events/{notification_event_id}
      * 
-     * @param id ID de la notificación
+     * @param notification_event_id ID de la notificación
      * @return Notificación encontrada
      */
     @Operation(
@@ -100,13 +100,13 @@ public class NotificationEventController {
                     description = "Notificación no encontrada"
             )
     })
-    @GetMapping("/{id}")
+    @GetMapping("/{notification_event_id}")
     public ResponseEntity<NotificationEventResponse> getById(
             @Parameter(description = "ID único de la notificación", required = true, example = "123e4567-e89b-12d3-a456-426614174000")
-            @PathVariable UUID id) {
-        log.debug("Getting notification event by id: {}", id);
+            @PathVariable("notification_event_id") UUID notification_event_id) {
+        log.debug("Getting notification event by id: {}", notification_event_id);
         
-        NotificationEvent notification = getNotificationEventsUseCase.getById(id);
+        NotificationEvent notification = getNotificationEventsUseCase.getById(notification_event_id);
         NotificationEventResponse response = mapper.toResponse(notification);
 
         return ResponseEntity.ok(response);
@@ -115,9 +115,9 @@ public class NotificationEventController {
     /**
      * Reintenta manualmente una notificación.
      * 
-     * POST /api/v1/notification_events/{id}/replay
+     * POST /notification_events/{notification_event_id}/replay
      * 
-     * @param id ID de la notificación a reintentar
+     * @param notification_event_id ID de la notificación a reintentar
      * @return Notificación procesada con estado actualizado
      */
     @Operation(
@@ -135,13 +135,13 @@ public class NotificationEventController {
                     description = "Notificación no encontrada"
             )
     })
-    @PostMapping("/{id}/replay")
+    @PostMapping("/{notification_event_id}/replay")
     public ResponseEntity<NotificationEventResponse> replay(
             @Parameter(description = "ID único de la notificación a reintentar", required = true, example = "123e4567-e89b-12d3-a456-426614174000")
-            @PathVariable UUID id) {
-        log.info("Replaying notification event: {}", id);
+            @PathVariable("notification_event_id") UUID notification_event_id) {
+        log.info("Replaying notification event: {}", notification_event_id);
         
-        NotificationEvent notification = replayNotificationUseCase.replay(id);
+        NotificationEvent notification = replayNotificationUseCase.replay(notification_event_id);
         NotificationEventResponse response = mapper.toResponse(notification);
 
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);

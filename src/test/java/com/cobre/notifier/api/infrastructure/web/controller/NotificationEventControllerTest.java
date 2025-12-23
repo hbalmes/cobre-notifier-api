@@ -56,9 +56,9 @@ class NotificationEventControllerTest {
 
         notificationEvent = NotificationEvent.builder()
                 .id(id)
-                .clientId("client-123")
-                .eventType("payment.completed")
-                .payload("{\"amount\": 1000}")
+                .clientId("CLIENT001")
+                .eventType("credit_card_payment")
+                .payload("Payment received for $150.00")
                 .webhookUrl("https://example.com/webhook")
                 .status(DeliveryStatus.SENT)
                 .retryCount(0)
@@ -68,16 +68,14 @@ class NotificationEventControllerTest {
                 .build();
 
         response = NotificationEventResponse.builder()
-                .id(id)
-                .clientId("client-123")
-                .eventType("payment.completed")
-                .payload("{\"amount\": 1000}")
-                .webhookUrl("https://example.com/webhook")
-                .status(DeliveryStatus.SENT)
-                .retryCount(0)
-                .createdAt(now)
-                .updatedAt(now)
-                .sentAt(now)
+                .eventId(id.toString())
+                .clientId("CLIENT001")
+                .eventType("credit_card_payment")
+                .content("Payment received for $150.00")
+                .deliveryDate(now.atZone(java.time.ZoneId.systemDefault())
+                        .withZoneSameInstant(java.time.ZoneId.of("UTC"))
+                        .format(java.time.format.DateTimeFormatter.ISO_INSTANT))
+                .deliveryStatus("completed")
                 .build();
     }
 
@@ -110,7 +108,7 @@ class NotificationEventControllerTest {
     void shouldGetAllNotificationEventsWithAllFilters() {
         // Given
         NotificationEventFilterRequest filters = new NotificationEventFilterRequest();
-        filters.setClientId("client-123");
+        filters.setClientId("CLIENT001");
         filters.setStatus(DeliveryStatus.SENT);
         filters.setFromDate(LocalDateTime.now().minusDays(1));
         filters.setToDate(LocalDateTime.now());
@@ -118,7 +116,7 @@ class NotificationEventControllerTest {
         List<NotificationEvent> notifications = Collections.singletonList(notificationEvent);
 
         when(getNotificationEventsUseCase.getAll(
-                eq("client-123"),
+                eq("CLIENT001"),
                 eq(DeliveryStatus.SENT),
                 any(LocalDateTime.class),
                 any(LocalDateTime.class)))
@@ -134,7 +132,7 @@ class NotificationEventControllerTest {
         assertThat(result.getBody()).hasSize(1);
 
         verify(getNotificationEventsUseCase).getAll(
-                eq("client-123"),
+                eq("CLIENT001"),
                 eq(DeliveryStatus.SENT),
                 any(LocalDateTime.class),
                 any(LocalDateTime.class));
@@ -147,15 +145,21 @@ class NotificationEventControllerTest {
         NotificationEventFilterRequest filters = new NotificationEventFilterRequest();
         NotificationEvent notification2 = NotificationEvent.builder()
                 .id(UUID.randomUUID())
-                .clientId("client-456")
-                .eventType("payment.failed")
+                .clientId("CLIENT002")
+                .eventType("credit_transfer")
+                .payload("Payment failed: insufficient funds")
                 .status(DeliveryStatus.FAILED)
+                .createdAt(LocalDateTime.now())
                 .build();
         NotificationEventResponse response2 = NotificationEventResponse.builder()
-                .id(notification2.getId())
-                .clientId("client-456")
-                .eventType("payment.failed")
-                .status(DeliveryStatus.FAILED)
+                .eventId(notification2.getId().toString())
+                .clientId("CLIENT002")
+                .eventType("credit_transfer")
+                .content("Payment failed: insufficient funds")
+                .deliveryDate(LocalDateTime.now().atZone(java.time.ZoneId.systemDefault())
+                        .withZoneSameInstant(java.time.ZoneId.of("UTC"))
+                        .format(java.time.format.DateTimeFormatter.ISO_INSTANT))
+                .deliveryStatus("failed")
                 .build();
 
         List<NotificationEvent> notifications = Arrays.asList(notificationEvent, notification2);
@@ -234,15 +238,22 @@ class NotificationEventControllerTest {
         UUID id = notificationEvent.getId();
         NotificationEvent replayedNotification = NotificationEvent.builder()
                 .id(id)
-                .clientId("client-123")
+                .clientId("CLIENT001")
+                .eventType("credit_card_payment")
+                .payload("Payment received for $150.00")
                 .status(DeliveryStatus.PENDING)
                 .retryCount(0)
+                .createdAt(LocalDateTime.now())
                 .build();
         NotificationEventResponse replayedResponse = NotificationEventResponse.builder()
-                .id(id)
-                .clientId("client-123")
-                .status(DeliveryStatus.PENDING)
-                .retryCount(0)
+                .eventId(id.toString())
+                .clientId("CLIENT001")
+                .eventType("credit_card_payment")
+                .content("Payment received for $150.00")
+                .deliveryDate(LocalDateTime.now().atZone(java.time.ZoneId.systemDefault())
+                        .withZoneSameInstant(java.time.ZoneId.of("UTC"))
+                        .format(java.time.format.DateTimeFormatter.ISO_INSTANT))
+                .deliveryStatus("pending")
                 .build();
 
         when(replayNotificationUseCase.replay(id)).thenReturn(replayedNotification);

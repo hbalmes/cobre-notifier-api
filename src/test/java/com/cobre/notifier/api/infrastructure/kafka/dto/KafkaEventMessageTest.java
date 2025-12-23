@@ -22,9 +22,8 @@ class KafkaEventMessageTest {
         String json = """
                 {
                     "client_id": "client-123",
-                    "event_type": "payment.completed",
-                    "payload": "{\\"amount\\":100.0}",
-                    "timestamp": 1234567890
+                    "event_type": "credit_card_payment",
+                    "content": "Credit card payment received for $150.00"
                 }
                 """;
 
@@ -33,9 +32,8 @@ class KafkaEventMessageTest {
 
         // Then
         assertThat(message.getClientId()).isEqualTo("client-123");
-        assertThat(message.getEventType()).isEqualTo("payment.completed");
-        assertThat(message.getPayload()).isEqualTo("{\"amount\":100.0}");
-        assertThat(message.getTimestamp()).isEqualTo(1234567890L);
+        assertThat(message.getEventType()).isEqualTo("credit_card_payment");
+        assertThat(message.getContent()).isEqualTo("Credit card payment received for $150.00");
     }
 
     @Test
@@ -46,8 +44,7 @@ class KafkaEventMessageTest {
                 {
                     "client_id": null,
                     "event_type": null,
-                    "payload": null,
-                    "timestamp": null
+                    "content": null
                 }
                 """;
 
@@ -57,8 +54,7 @@ class KafkaEventMessageTest {
         // Then
         assertThat(message.getClientId()).isNull();
         assertThat(message.getEventType()).isNull();
-        assertThat(message.getPayload()).isNull();
-        assertThat(message.getTimestamp()).isNull();
+        assertThat(message.getContent()).isNull();
     }
 
     @Test
@@ -68,8 +64,7 @@ class KafkaEventMessageTest {
         KafkaEventMessage message = KafkaEventMessage.builder()
                 .clientId("client-123")
                 .eventType("payment.completed")
-                .payload("{\"amount\":100.0}")
-                .timestamp(1234567890L)
+                .content("Credit card payment received for $150.00")
                 .build();
 
         // When
@@ -92,8 +87,7 @@ class KafkaEventMessageTest {
         assertThat(message).isNotNull();
         assertThat(message.getClientId()).isNull();
         assertThat(message.getEventType()).isNull();
-        assertThat(message.getPayload()).isNull();
-        assertThat(message.getTimestamp()).isNull();
+        assertThat(message.getContent()).isNull();
     }
 
     @Test
@@ -101,18 +95,18 @@ class KafkaEventMessageTest {
     void shouldCreateKafkaEventMessageWithAllArgsConstructor() {
         // Given
         String clientId = "client-456";
-        String eventType = "payment.failed";
-        String payload = "{\"error\":\"insufficient_funds\"}";
-        Long timestamp = 9876543210L;
+        String eventType = "credit_transfer";
+        String content = "Bank transfer received from Account #4567 for $1,500.00";
+        String eventId = "event-123";
 
         // When
-        KafkaEventMessage message = new KafkaEventMessage(clientId, eventType, payload, timestamp);
+        KafkaEventMessage message = new KafkaEventMessage(clientId, eventType, content, eventId);
 
         // Then
         assertThat(message.getClientId()).isEqualTo(clientId);
         assertThat(message.getEventType()).isEqualTo(eventType);
-        assertThat(message.getPayload()).isEqualTo(payload);
-        assertThat(message.getTimestamp()).isEqualTo(timestamp);
+        assertThat(message.getContent()).isEqualTo(content);
+        assertThat(message.getEventId()).isEqualTo(eventId);
     }
 
     @Test
@@ -121,21 +115,18 @@ class KafkaEventMessageTest {
         // Given
         KafkaEventMessage message = new KafkaEventMessage();
         String clientId = "client-789";
-        String eventType = "payment.pending";
-        String payload = "{\"status\":\"processing\"}";
-        Long timestamp = 1111111111L;
+        String eventType = "debit_automatic_payment";
+        String content = "Monthly utility bill payment of $85.50";
 
         // When
         message.setClientId(clientId);
         message.setEventType(eventType);
-        message.setPayload(payload);
-        message.setTimestamp(timestamp);
+        message.setContent(content);
 
         // Then
         assertThat(message.getClientId()).isEqualTo(clientId);
         assertThat(message.getEventType()).isEqualTo(eventType);
-        assertThat(message.getPayload()).isEqualTo(payload);
-        assertThat(message.getTimestamp()).isEqualTo(timestamp);
+        assertThat(message.getContent()).isEqualTo(content);
     }
 
     @Test
@@ -145,7 +136,7 @@ class KafkaEventMessageTest {
         String json = """
                 {
                     "client_id": "client-999",
-                    "event_type": "payment.refunded"
+                    "event_type": "credit_refund"
                 }
                 """;
 
@@ -154,9 +145,8 @@ class KafkaEventMessageTest {
 
         // Then
         assertThat(message.getClientId()).isEqualTo("client-999");
-        assertThat(message.getEventType()).isEqualTo("payment.refunded");
-        assertThat(message.getPayload()).isNull();
-        assertThat(message.getTimestamp()).isNull();
+        assertThat(message.getEventType()).isEqualTo("credit_refund");
+        assertThat(message.getContent()).isNull();
     }
 
     @Test
@@ -166,8 +156,7 @@ class KafkaEventMessageTest {
         KafkaEventMessage message = new KafkaEventMessage();
         message.setClientId("client-123");
         message.setEventType(null);
-        message.setPayload(null);
-        message.setTimestamp(null);
+        message.setContent(null);
 
         // When
         String json = objectMapper.writeValueAsString(message);
@@ -184,22 +173,19 @@ class KafkaEventMessageTest {
         KafkaEventMessage message1 = KafkaEventMessage.builder()
                 .clientId("client-123")
                 .eventType("payment.completed")
-                .payload("{\"amount\":100}")
-                .timestamp(1234567890L)
+                .content("Credit card payment received for $150.00")
                 .build();
 
         KafkaEventMessage message2 = KafkaEventMessage.builder()
                 .clientId("client-123")
                 .eventType("payment.completed")
-                .payload("{\"amount\":100}")
-                .timestamp(1234567890L)
+                .content("Credit card payment received for $150.00")
                 .build();
 
         KafkaEventMessage message3 = KafkaEventMessage.builder()
                 .clientId("client-456")
                 .eventType("payment.completed")
-                .payload("{\"amount\":100}")
-                .timestamp(1234567890L)
+                .content("Credit card payment received for $150.00")
                 .build();
 
         // Then
@@ -214,9 +200,8 @@ class KafkaEventMessageTest {
         // Given
         KafkaEventMessage message = KafkaEventMessage.builder()
                 .clientId("client-123")
-                .eventType("payment.completed")
-                .payload("{\"amount\":100}")
-                .timestamp(1234567890L)
+                .eventType("credit_card_payment")
+                .content("Credit card payment received for $150.00")
                 .build();
 
         // When
@@ -225,7 +210,7 @@ class KafkaEventMessageTest {
         // Then
         assertThat(toString).isNotNull();
         assertThat(toString).contains("client-123");
-        assertThat(toString).contains("payment.completed");
+        assertThat(toString).contains("credit_card_payment");
     }
 
     @Test
@@ -236,8 +221,7 @@ class KafkaEventMessageTest {
                 {
                     "client_id": "",
                     "event_type": "",
-                    "payload": "",
-                    "timestamp": 0
+                    "content": ""
                 }
                 """;
 
@@ -247,26 +231,9 @@ class KafkaEventMessageTest {
         // Then
         assertThat(message.getClientId()).isEmpty();
         assertThat(message.getEventType()).isEmpty();
-        assertThat(message.getPayload()).isEmpty();
-        assertThat(message.getTimestamp()).isEqualTo(0L);
+        assertThat(message.getContent()).isNotNull();
+        assertThat(message.getContent()).isEmpty();
     }
 
-    @Test
-    @DisplayName("Should handle large timestamp values")
-    void shouldHandleLargeTimestampValues() {
-        // Given
-        Long largeTimestamp = Long.MAX_VALUE;
-
-        // When
-        KafkaEventMessage message = KafkaEventMessage.builder()
-                .clientId("client-123")
-                .eventType("payment.completed")
-                .payload("{\"amount\":100}")
-                .timestamp(largeTimestamp)
-                .build();
-
-        // Then
-        assertThat(message.getTimestamp()).isEqualTo(largeTimestamp);
-    }
 }
 

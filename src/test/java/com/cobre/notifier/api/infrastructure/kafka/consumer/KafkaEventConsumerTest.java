@@ -7,11 +7,11 @@ import com.cobre.notifier.api.domain.Subscription;
 import com.cobre.notifier.api.domain.exception.InvalidSubscriptionException;
 import com.cobre.notifier.api.infrastructure.kafka.dto.KafkaEventMessage;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.kafka.support.Acknowledgment;
@@ -45,12 +45,12 @@ class KafkaEventConsumerTest {
     @Mock
     private Acknowledgment acknowledgment;
 
-    @InjectMocks
+    private SimpleMeterRegistry meterRegistry;
     private KafkaEventConsumer kafkaEventConsumer;
 
     private static final String CLIENT_ID = "client-123";
     private static final String EVENT_TYPE = "payment.completed";
-    private static final String PAYLOAD = "{\"amount\":100.0}";
+    private static final String CONTENT = "Credit card payment received for $150.00";
     private static final String WEBHOOK_URL = "https://example.com/webhook";
 
     private KafkaEventMessage eventMessage;
@@ -60,11 +60,18 @@ class KafkaEventConsumerTest {
 
     @BeforeEach
     void setUp() throws Exception {
+        meterRegistry = new SimpleMeterRegistry();
+        kafkaEventConsumer = new KafkaEventConsumer(
+                processNotificationUseCase,
+                subscriptionRepository,
+                objectMapper,
+                meterRegistry
+        );
+        
         eventMessage = KafkaEventMessage.builder()
                 .clientId(CLIENT_ID)
                 .eventType(EVENT_TYPE)
-                .payload(PAYLOAD)
-                .timestamp(System.currentTimeMillis())
+                .content(CONTENT)
                 .build();
 
         subscription = Subscription.create(
@@ -75,18 +82,16 @@ class KafkaEventConsumerTest {
         notification = NotificationEvent.create(
                 CLIENT_ID,
                 EVENT_TYPE,
-                PAYLOAD,
+                CONTENT,
                 WEBHOOK_URL);
 
         kafkaMessageJson = """
                 {
                     "client_id": "%s",
                     "event_type": "%s",
-                    "payload": "%s",
-                    "timestamp": %d
+                    "content": "%s"
                 }
-                """.formatted(CLIENT_ID, EVENT_TYPE, PAYLOAD.replace("\"", "\\\""), 
-                        System.currentTimeMillis());
+                """.formatted(CLIENT_ID, EVENT_TYPE, CONTENT.replace("\"", "\\\""));
     }
 
     @Test

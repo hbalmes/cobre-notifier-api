@@ -6,10 +6,13 @@ import com.cobre.notifier.api.domain.NotificationEvent;
 import com.cobre.notifier.api.infrastructure.persistence.entity.NotificationEventEntity;
 import com.cobre.notifier.api.infrastructure.persistence.mapper.NotificationEventMapper;
 import com.cobre.notifier.api.infrastructure.persistence.repository.NotificationEventJpaRepository;
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -44,8 +47,8 @@ public class NotificationEventRepositoryAdapter implements NotificationEventRepo
                                                   DeliveryStatus status, 
                                                   LocalDateTime fromDate, 
                                                   LocalDateTime toDate) {
-        List<NotificationEventEntity> entities = jpaRepository.findByClientIdWithFilters(
-                clientId, status, fromDate, toDate);
+        Specification<NotificationEventEntity> spec = buildSpecification(clientId, status, fromDate, toDate);
+        List<NotificationEventEntity> entities = jpaRepository.findAll(spec);
         return entities.stream()
                 .map(mapper::toDomain)
                 .collect(Collectors.toList());
@@ -55,11 +58,40 @@ public class NotificationEventRepositoryAdapter implements NotificationEventRepo
     public List<NotificationEvent> findAll(DeliveryStatus status, 
                                           LocalDateTime fromDate, 
                                           LocalDateTime toDate) {
-        List<NotificationEventEntity> entities = jpaRepository.findAllWithFilters(
-                status, fromDate, toDate);
+        Specification<NotificationEventEntity> spec = buildSpecification(null, status, fromDate, toDate);
+        List<NotificationEventEntity> entities = jpaRepository.findAll(spec);
         return entities.stream()
                 .map(mapper::toDomain)
                 .collect(Collectors.toList());
+    }
+
+    private Specification<NotificationEventEntity> buildSpecification(String clientId,
+                                                                     DeliveryStatus status,
+                                                                     LocalDateTime fromDate,
+                                                                     LocalDateTime toDate) {
+        return (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            if (clientId != null) {
+                predicates.add(cb.equal(root.get("clientId"), clientId));
+            }
+
+            if (status != null) {
+                predicates.add(cb.equal(root.get("status"), status));
+            }
+
+            if (fromDate != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("createdAt"), fromDate));
+            }
+
+            if (toDate != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("createdAt"), toDate));
+            }
+
+            query.orderBy(cb.desc(root.get("createdAt")));
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
     }
 
     @Override

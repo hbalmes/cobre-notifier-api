@@ -37,7 +37,8 @@ swagger-cli validate specs/openapi.json
 
 ## Endpoints Documentados
 
-- `GET /api/v1/notification_events` - Obtener todas las notificaciones
-- `GET /api/v1/notification_events/{id}` - Obtener notificación por ID
-- `POST /api/v1/notification_events/{id}/replay` - Reintentar notificación
+- `POST /api/v1/events` - Publicar evento a Kafka (solo desarrollo/testing)
+- `GET /notification_events` - Obtener todas las notificaciones
+- `GET /notification_events/{notification_event_id}` - Obtener notificación por ID
+- `POST /notification_events/{notification_event_id}/replay` - Reintentar notificación
 

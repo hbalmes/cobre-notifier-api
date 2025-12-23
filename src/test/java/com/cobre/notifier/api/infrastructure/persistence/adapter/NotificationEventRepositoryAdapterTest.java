@@ -12,6 +12,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -119,8 +120,7 @@ class NotificationEventRepositoryAdapterTest {
         LocalDateTime toDate = LocalDateTime.now();
         List<NotificationEventEntity> entities = List.of(entity);
         
-        when(jpaRepository.findByClientIdWithFilters(clientId, status, fromDate, toDate))
-                .thenReturn(entities);
+        when(jpaRepository.findAll(any(Specification.class))).thenReturn(entities);
         when(mapper.toDomain(entity)).thenReturn(notification);
 
         // When
@@ -129,7 +129,7 @@ class NotificationEventRepositoryAdapterTest {
         // Then
         assertThat(result).hasSize(1);
         assertThat(result).contains(notification);
-        verify(jpaRepository, times(1)).findByClientIdWithFilters(clientId, status, fromDate, toDate);
+        verify(jpaRepository, times(1)).findAll(any(Specification.class));
     }
 
     @Test
@@ -141,8 +141,7 @@ class NotificationEventRepositoryAdapterTest {
         LocalDateTime toDate = LocalDateTime.now();
         List<NotificationEventEntity> entities = List.of(entity);
         
-        when(jpaRepository.findAllWithFilters(status, fromDate, toDate))
-                .thenReturn(entities);
+        when(jpaRepository.findAll(any(Specification.class))).thenReturn(entities);
         when(mapper.toDomain(entity)).thenReturn(notification);
 
         // When
@@ -151,7 +150,7 @@ class NotificationEventRepositoryAdapterTest {
         // Then
         assertThat(result).hasSize(1);
         assertThat(result).contains(notification);
-        verify(jpaRepository, times(1)).findAllWithFilters(status, fromDate, toDate);
+        verify(jpaRepository, times(1)).findAll(any(Specification.class));
     }
 
     @Test

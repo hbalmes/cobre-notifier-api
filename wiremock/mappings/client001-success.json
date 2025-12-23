@@ -1,0 +1,25 @@
+{
+  "request": {
+    "method": "POST",
+    "urlPathPattern": "/webhook/.*",
+    "headers": {
+      "Content-Type": {
+        "equalTo": "application/json"
+      }
+    },
+    "bodyPatterns": [
+      {
+        "matchesJsonPath": "$[?(@.client_id == 'CLIENT001')]"
+      }
+    ]
+  },
+  "response": {
+    "status": 200,
+    "body": "OK",
+    "headers": {
+      "Content-Type": "text/plain"
+    }
+  },
+  "priority": 1
+}
+

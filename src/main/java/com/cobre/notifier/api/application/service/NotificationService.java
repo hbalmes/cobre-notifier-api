@@ -11,6 +11,9 @@ import com.cobre.notifier.api.domain.Subscription;
 import com.cobre.notifier.api.domain.exception.InvalidSubscriptionException;
 import com.cobre.notifier.api.domain.exception.NotificationNotFoundException;
 import com.cobre.notifier.api.domain.exception.NotificationDeliveryException;
+import io.micrometer.core.instrument.DistributionSummary;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -19,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Servicio de aplicación que implementa los casos de uso relacionados con notificaciones.
@@ -34,6 +38,37 @@ public class NotificationService implements ProcessNotificationUseCase,
     private final NotificationEventRepository notificationEventRepository;
     private final SubscriptionRepository subscriptionRepository;
     private final WebhookDeliveryService webhookDeliveryService;
+    private final MeterRegistry meterRegistry;
+
+    // Métricas adicionales de reintentos
+    private final AtomicLong retrySuccessCount = new AtomicLong(0);
+    private final AtomicLong retryTotalCount = new AtomicLong(0);
+    private final DistributionSummary retryDistributionSummary;
+
+    public NotificationService(NotificationEventRepository notificationEventRepository,
+                              SubscriptionRepository subscriptionRepository,
+                              WebhookDeliveryService webhookDeliveryService,
+                              MeterRegistry meterRegistry) {
+        this.notificationEventRepository = notificationEventRepository;
+        this.subscriptionRepository = subscriptionRepository;
+        this.webhookDeliveryService = webhookDeliveryService;
+        this.meterRegistry = meterRegistry;
+
+        // DistributionSummary para distribución de reintentos
+        this.retryDistributionSummary = DistributionSummary.builder("notification.retry.distribution")
+                .description("Distribution of retry count per notification")
+                .register(meterRegistry);
+
+        // Gauge para tasa de éxito después de reintentos
+        Gauge.builder("notification.retry.success_rate", 
+                () -> {
+                    long total = retryTotalCount.get();
+                    if (total == 0) return 0.0;
+                    return (double) retrySuccessCount.get() / total * 100;
+                })
+                .description("Success rate after retries (percentage)")
+                .register(meterRegistry);
+    }
 
     @Override
     @Transactional
@@ -64,6 +99,13 @@ public class NotificationService implements ProcessNotificationUseCase,
                     .build();
         }
 
+        // Registrar distribución de reintentos si es un reintento
+        boolean isRetry = notificationEvent.getRetryCount() > 0;
+        if (isRetry) {
+            retryDistributionSummary.record(notificationEvent.getRetryCount());
+            retryTotalCount.incrementAndGet();
+        }
+
         // Intentar entrega
         try {
             String responseCode = webhookDeliveryService.deliver(
@@ -74,6 +116,11 @@ public class NotificationService implements ProcessNotificationUseCase,
             notificationEvent.markAsSent(responseCode, "Success");
             log.info("Notification {} delivered successfully to {}", 
                     notificationEvent.getId(), subscription.getWebhookUrl());
+            
+            // Registrar éxito si fue un reintento
+            if (isRetry) {
+                retrySuccessCount.incrementAndGet();
+            }
             
         } catch (NotificationDeliveryException e) {
             log.warn("Failed to deliver notification {}: {}", 

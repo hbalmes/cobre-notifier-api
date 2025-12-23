@@ -1,0 +1,25 @@
+{
+  "request": {
+    "method": "POST",
+    "urlPathPattern": "/webhook/.*",
+    "headers": {
+      "Content-Type": {
+        "equalTo": "application/json"
+      }
+    },
+    "bodyPatterns": [
+      {
+        "matchesJsonPath": "$[?(@.client_id == 'CLIENT002')]"
+      }
+    ]
+  },
+  "response": {
+    "status": 500,
+    "body": "Internal Server Error",
+    "headers": {
+      "Content-Type": "text/plain"
+    }
+  },
+  "priority": 1
+}
+

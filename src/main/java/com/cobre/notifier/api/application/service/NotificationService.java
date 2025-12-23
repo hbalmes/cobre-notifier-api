@@ -50,6 +50,11 @@ public class NotificationService implements ProcessNotificationUseCase,
     private final Counter replaySuccessCounter;
     private final Counter replayFailureCounter;
     private final Timer replayTimer;
+    
+    // Métricas de procesamiento de notificaciones
+    private final Counter notificationProcessedCounter;
+    private final Counter notificationDeliverySuccessInitialCounter;
+    private final Counter notificationDeliveryFailedInitialCounter;
 
     public NotificationService(NotificationEventRepository notificationEventRepository,
                               SubscriptionRepository subscriptionRepository,
@@ -91,6 +96,19 @@ public class NotificationService implements ProcessNotificationUseCase,
         this.replayTimer = Timer.builder("notification.replay.duration")
                 .description("Time taken to process manual replay requests")
                 .register(meterRegistry);
+        
+        // Métricas de procesamiento
+        this.notificationProcessedCounter = Counter.builder("notification.processed.total")
+                .description("Total number of notifications processed")
+                .register(meterRegistry);
+        
+        this.notificationDeliverySuccessInitialCounter = Counter.builder("notification.delivery.success.initial")
+                .description("Total number of successful initial deliveries (without retry)")
+                .register(meterRegistry);
+        
+        this.notificationDeliveryFailedInitialCounter = Counter.builder("notification.delivery.failed.initial")
+                .description("Total number of failed initial deliveries (without retry)")
+                .register(meterRegistry);
     }
 
     @Override
@@ -128,6 +146,9 @@ public class NotificationService implements ProcessNotificationUseCase,
         if (isRetry) {
             retryDistributionSummary.record(notificationEvent.getRetryCount());
             retryTotalCount.incrementAndGet();
+        } else {
+            // Incrementar contador de notificaciones procesadas (solo en primer intento)
+            notificationProcessedCounter.increment();
         }
 
         // Intentar entrega
@@ -144,12 +165,28 @@ public class NotificationService implements ProcessNotificationUseCase,
             // Registrar éxito si fue un reintento
             if (isRetry) {
                 retrySuccessCount.incrementAndGet();
+            } else {
+                // Registrar éxito en entrega inicial
+                notificationDeliverySuccessInitialCounter.increment();
             }
             
         } catch (NotificationDeliveryException e) {
             log.warn("Failed to deliver notification {}: {}", 
                     notificationEvent.getId(), e.getMessage());
-            notificationEvent.markAsFailed(e.getMessage());
+            
+            // Si es el primer intento (retryCount == 0), mantener como PENDING para que el retry service lo procese
+            // Si ya tiene reintentos, marcar como FAILED solo si alcanzó el máximo
+            if (notificationEvent.getRetryCount() == 0) {
+                // Mantener como PENDING para que el retry service lo procese
+                notificationEvent.updateErrorMessage(e.getMessage());
+                // Registrar fallo en entrega inicial
+                notificationDeliveryFailedInitialCounter.increment();
+                log.debug("Notification {} failed on initial attempt, keeping as PENDING for retry", 
+                        notificationEvent.getId());
+            } else {
+                // Ya tiene reintentos, marcar como fallida
+                notificationEvent.markAsFailed(e.getMessage());
+            }
         }
 
         return notificationEventRepository.save(notificationEvent);

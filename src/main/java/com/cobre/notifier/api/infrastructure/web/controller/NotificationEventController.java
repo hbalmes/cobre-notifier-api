@@ -2,8 +2,8 @@ package com.cobre.notifier.api.infrastructure.web.controller;
 
 import com.cobre.notifier.api.application.port.input.GetNotificationEventsUseCase;
 import com.cobre.notifier.api.application.port.input.ReplayNotificationUseCase;
+import com.cobre.notifier.api.domain.DeliveryStatus;
 import com.cobre.notifier.api.domain.NotificationEvent;
-import com.cobre.notifier.api.infrastructure.web.dto.NotificationEventFilterRequest;
 import com.cobre.notifier.api.infrastructure.web.dto.NotificationEventResponse;
 import com.cobre.notifier.api.infrastructure.web.mapper.NotificationEventWebMapper;
 import io.swagger.v3.oas.annotations.Operation;
@@ -15,10 +15,12 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -41,14 +43,20 @@ public class NotificationEventController {
     /**
      * Obtiene todas las notificaciones con filtros opcionales.
      * 
-     * GET /notification_events?client_id=xxx&status=SENT&from_date=2024-01-01T00:00:00&to_date=2024-12-31T23:59:59
+     * GET /notification_events?client_id=xxx&delivery_status=sent&from_date=2024-01-01T00:00:00&to_date=2024-12-31T23:59:59
      * 
-     * @param filters Filtros opcionales (clientId, status, fromDate, toDate)
+     * Soporta tanto snake_case (client_id, delivery_status) como camelCase (clientId, deliveryStatus)
+     * 
+     * @param clientId ID del cliente para filtrar (acepta client_id o clientId)
+     * @param deliveryStatus Estado de entrega como string (acepta delivery_status o deliveryStatus): "completed", "failed", "pending"
+     * @param fromDate Fecha desde para filtrar
+     * @param toDate Fecha hasta para filtrar
      * @return Lista de notificaciones que cumplen los criterios
      */
     @Operation(
             summary = "Obtener todas las notificaciones",
-            description = "Retorna una lista de notificaciones con filtros opcionales. Todos los parámetros de filtro son opcionales."
+            description = "Retorna una lista de notificaciones con filtros opcionales. Todos los parámetros de filtro son opcionales. " +
+                    "Acepta parámetros en snake_case (client_id, delivery_status) o camelCase (clientId, deliveryStatus)."
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -59,15 +67,61 @@ public class NotificationEventController {
     })
     @GetMapping
     public ResponseEntity<List<NotificationEventResponse>> getAll(
-            @Parameter(description = "Filtros opcionales para buscar notificaciones")
-            @ModelAttribute NotificationEventFilterRequest filters) {
-        log.debug("Getting all notification events with filters: {}", filters);
+            @Parameter(description = "ID del cliente para filtrar", example = "CLIENT001")
+            @RequestParam(value = "client_id", required = false) String clientIdSnake,
+            @RequestParam(value = "clientId", required = false) String clientIdCamel,
+            @Parameter(description = "Estado de entrega (completed, failed, pending)", example = "completed")
+            @RequestParam(value = "delivery_status", required = false) String deliveryStatusSnake,
+            @RequestParam(value = "deliveryStatus", required = false) String deliveryStatusCamel,
+            @Parameter(description = "Fecha desde (formato: yyyy-MM-ddTHH:mm:ss)", example = "2024-01-01T00:00:00")
+            @RequestParam(value = "from_date", required = false) 
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fromDateSnake,
+            @RequestParam(value = "fromDate", required = false) 
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fromDateCamel,
+            @Parameter(description = "Fecha hasta (formato: yyyy-MM-ddTHH:mm:ss)", example = "2024-12-31T23:59:59")
+            @RequestParam(value = "to_date", required = false) 
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime toDateSnake,
+            @RequestParam(value = "toDate", required = false) 
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime toDateCamel) {
+        
+        // Resolver parámetros: preferir snake_case si está presente, sino usar camelCase
+        String clientId = clientIdSnake != null ? clientIdSnake : clientIdCamel;
+        String deliveryStatusStr = deliveryStatusSnake != null ? deliveryStatusSnake : deliveryStatusCamel;
+        LocalDateTime fromDate = fromDateSnake != null ? fromDateSnake : fromDateCamel;
+        LocalDateTime toDate = toDateSnake != null ? toDateSnake : toDateCamel;
+        
+        // Convertir delivery_status string a enum DeliveryStatus
+        DeliveryStatus status = null;
+        if (deliveryStatusStr != null && !deliveryStatusStr.isEmpty()) {
+            try {
+                // Mapear valores de API (completed, failed, pending) a enum (SENT, FAILED, PENDING/RETRYING)
+                status = switch (deliveryStatusStr.toLowerCase()) {
+                    case "completed" -> DeliveryStatus.SENT;
+                    case "failed" -> DeliveryStatus.FAILED;
+                    case "pending" -> DeliveryStatus.PENDING;
+                    default -> {
+                        // Intentar parsear directamente como enum
+                        try {
+                            yield DeliveryStatus.valueOf(deliveryStatusStr.toUpperCase());
+                        } catch (IllegalArgumentException e) {
+                            log.warn("Invalid delivery_status value: {}, ignoring filter", deliveryStatusStr);
+                            yield null;
+                        }
+                    }
+                };
+            } catch (Exception e) {
+                log.warn("Error parsing delivery_status: {}, ignoring filter", deliveryStatusStr, e);
+            }
+        }
+        
+        log.debug("Getting all notification events with filters: clientId={}, status={}, fromDate={}, toDate={}", 
+                clientId, status, fromDate, toDate);
         
         List<NotificationEvent> notifications = getNotificationEventsUseCase.getAll(
-                filters.getClientId(),
-                filters.getStatus(),
-                filters.getFromDate(),
-                filters.getToDate()
+                clientId,
+                status,
+                fromDate,
+                toDate
         );
 
         List<NotificationEventResponse> responses = notifications.stream()

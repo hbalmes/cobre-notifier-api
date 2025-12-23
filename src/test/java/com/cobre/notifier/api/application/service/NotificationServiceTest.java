@@ -93,8 +93,8 @@ class NotificationServiceTest {
     }
 
     @Test
-    @DisplayName("Should mark notification as failed when webhook delivery fails")
-    void shouldMarkNotificationAsFailedWhenWebhookDeliveryFails() {
+    @DisplayName("Should keep notification as PENDING when webhook delivery fails on initial attempt")
+    void shouldKeepNotificationAsPendingWhenWebhookDeliveryFailsOnInitialAttempt() {
         // Given
         when(subscriptionRepository.findActiveByClientId(CLIENT_ID))
                 .thenReturn(Optional.of(subscription));
@@ -108,9 +108,11 @@ class NotificationServiceTest {
         NotificationEvent result = notificationService.process(notification);
 
         // Then
-        assertThat(result.getStatus()).isEqualTo(DeliveryStatus.FAILED);
-        assertThat(result.getFailedAt()).isNotNull();
-        assertThat(result.getErrorMessage()).isNotNull();
+        // En el primer intento (retryCount == 0), se mantiene como PENDING para que el retry service lo procese
+        assertThat(result.getStatus()).isEqualTo(DeliveryStatus.PENDING);
+        assertThat(result.getFailedAt()).isNull(); // No se marca como fallida aún
+        assertThat(result.getErrorMessage()).isNotNull(); // Pero sí se guarda el error
+        assertThat(result.getRetryCount()).isEqualTo(0); // Aún no tiene reintentos
         verify(webhookDeliveryService, times(1)).deliver(WEBHOOK_URL, PAYLOAD);
         verify(notificationEventRepository, times(1)).save(any(NotificationEvent.class));
     }

@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -39,5 +40,14 @@ public interface NotificationEventJpaRepository extends JpaRepository<Notificati
      * Verifica si existe una notificación con el ID dado.
      */
     boolean existsById(UUID id);
+
+    /**
+     * Busca una notificación por su kafka_event_id.
+     * Usado para verificar idempotencia y prevenir duplicados.
+     * 
+     * @param kafkaEventId ID del evento de Kafka
+     * @return Entidad encontrada o Optional vacío
+     */
+    Optional<NotificationEventEntity> findByKafkaEventId(String kafkaEventId);
 }
 

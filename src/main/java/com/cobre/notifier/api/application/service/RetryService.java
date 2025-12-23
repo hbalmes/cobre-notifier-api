@@ -167,6 +167,13 @@ public class RetryService implements RetryFailedNotificationsUseCase {
                                 .tag("client_id", notification.getClientId())
                                 .register(meterRegistry)
                                 .increment();
+                        
+                        // Métrica para top clientes por volumen de reintentos
+                        Counter.builder("notification.retry.by_client.total")
+                                .description("Total retry attempts by client ID")
+                                .tag("client_id", notification.getClientId())
+                                .register(meterRegistry)
+                                .increment();
                     } else {
                         log.warn("Notification {} reached max retries, marking as failed", 
                                 notification.getId());

@@ -40,6 +40,9 @@ class KafkaEventConsumerTest {
     private SubscriptionRepository subscriptionRepository;
 
     @Mock
+    private com.cobre.notifier.api.application.port.output.NotificationEventRepository notificationEventRepository;
+
+    @Mock
     private ObjectMapper objectMapper;
 
     @Mock
@@ -64,6 +67,7 @@ class KafkaEventConsumerTest {
         kafkaEventConsumer = new KafkaEventConsumer(
                 processNotificationUseCase,
                 subscriptionRepository,
+                notificationEventRepository,
                 objectMapper,
                 meterRegistry
         );
@@ -100,6 +104,8 @@ class KafkaEventConsumerTest {
         // Given
         when(objectMapper.readValue(kafkaMessageJson, KafkaEventMessage.class))
                 .thenReturn(eventMessage);
+        when(notificationEventRepository.findByKafkaEventId(anyString()))
+                .thenReturn(Optional.empty()); // No duplicate
         when(subscriptionRepository.findActiveByClientId(CLIENT_ID))
                 .thenReturn(Optional.of(subscription));
         when(processNotificationUseCase.process(any(NotificationEvent.class)))
@@ -154,6 +160,8 @@ class KafkaEventConsumerTest {
                 WEBHOOK_URL);
         when(objectMapper.readValue(kafkaMessageJson, KafkaEventMessage.class))
                 .thenReturn(eventMessage);
+        when(notificationEventRepository.findByKafkaEventId(anyString()))
+                .thenReturn(Optional.empty()); // No duplicate
         when(subscriptionRepository.findActiveByClientId(CLIENT_ID))
                 .thenReturn(Optional.of(subscriptionWithoutEvent));
 
@@ -199,6 +207,8 @@ class KafkaEventConsumerTest {
         // Given
         when(objectMapper.readValue(kafkaMessageJson, KafkaEventMessage.class))
                 .thenReturn(eventMessage);
+        when(notificationEventRepository.findByKafkaEventId(anyString()))
+                .thenReturn(Optional.empty()); // No duplicate
         when(subscriptionRepository.findActiveByClientId(CLIENT_ID))
                 .thenReturn(Optional.of(subscription));
         when(processNotificationUseCase.process(any(NotificationEvent.class)))
@@ -223,6 +233,8 @@ class KafkaEventConsumerTest {
         // Given
         when(objectMapper.readValue(kafkaMessageJson, KafkaEventMessage.class))
                 .thenReturn(eventMessage);
+        when(notificationEventRepository.findByKafkaEventId(anyString()))
+                .thenReturn(Optional.empty()); // No duplicate
         when(subscriptionRepository.findActiveByClientId(CLIENT_ID))
                 .thenReturn(Optional.of(subscription));
         when(processNotificationUseCase.process(any(NotificationEvent.class)))

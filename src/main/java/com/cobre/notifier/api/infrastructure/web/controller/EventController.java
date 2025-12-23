@@ -16,11 +16,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Base64;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * Controlador REST para publicar eventos a Kafka.
@@ -85,8 +88,9 @@ public class EventController {
             log.info("Publishing test event: clientId={}, eventType={}", 
                     event.getClientId(), event.getEventType());
             
-            // Generar event_id único y agregarlo al mensaje para tracking
-            String eventId = UUID.randomUUID().toString();
+            // Generar event_id basado en hash del contenido para idempotencia
+            // Si el usuario envía el mismo contenido, se generará el mismo event_id
+            String eventId = generateIdempotencyKey(event);
             event.setEventId(eventId);
             
             // Fecha de publicación en formato ISO-8601 UTC
@@ -109,8 +113,37 @@ public class EventController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of(
                             "error", "Failed to publish event",
-                            "message", e.getMessage()
-                    ));
+                    "message", e.getMessage()
+            ));
+        }
+    }
+
+    /**
+     * Genera una clave de idempotencia basada en el contenido del mensaje.
+     * Usa SHA-256 hash del contenido para generar un ID único y determinístico.
+     * Mismo contenido = mismo event_id.
+     * 
+     * @param event Mensaje del evento
+     * @return String con el hash del contenido
+     */
+    private String generateIdempotencyKey(KafkaEventMessage event) {
+        // Crear string único basado en contenido del mensaje
+        String content = String.format("%s:%s:%s", 
+                event.getClientId() != null ? event.getClientId() : "", 
+                event.getEventType() != null ? event.getEventType() : "", 
+                event.getContent() != null ? event.getContent() : "");
+        
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(content.getBytes(StandardCharsets.UTF_8));
+            
+            // Convertir a base64 y tomar primeros 32 caracteres
+            String base64Hash = Base64.getEncoder().encodeToString(hash);
+            return base64Hash.substring(0, Math.min(32, base64Hash.length()));
+        } catch (NoSuchAlgorithmException e) {
+            log.error("Error generating idempotency key, using fallback", e);
+            // Fallback: usar hash simple del contenido
+            return String.valueOf(content.hashCode());
         }
     }
 }

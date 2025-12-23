@@ -31,6 +31,15 @@ public interface NotificationEventRepository {
     Optional<NotificationEvent> findById(UUID id);
 
     /**
+     * Busca una notificación por su kafka_event_id.
+     * Usado para verificar idempotencia y prevenir duplicados.
+     * 
+     * @param kafkaEventId ID del evento de Kafka
+     * @return Notificación encontrada o Optional vacío
+     */
+    Optional<NotificationEvent> findByKafkaEventId(String kafkaEventId);
+
+    /**
      * Busca notificaciones por cliente con filtros opcionales.
      * 
      * @param clientId ID del cliente

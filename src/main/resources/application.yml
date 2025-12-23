@@ -99,7 +99,7 @@ app:
       multiplier: ${NOTIFICATION_RETRY_MULTIPLIER:2.0}
     scheduler:
       enabled: ${NOTIFICATION_SCHEDULER_ENABLED:true}
-      fixed-delay-ms: ${NOTIFICATION_SCHEDULER_DELAY_MS:60000}
+      fixed-delay-ms: ${NOTIFICATION_SCHEDULER_DELAY_MS:10000}
   webhook:
     timeout-ms: ${WEBHOOK_TIMEOUT_MS:5000}
     connect-timeout-ms: ${WEBHOOK_CONNECT_TIMEOUT_MS:3000}

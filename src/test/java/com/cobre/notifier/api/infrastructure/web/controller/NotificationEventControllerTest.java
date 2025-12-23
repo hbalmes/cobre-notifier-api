@@ -83,7 +83,6 @@ class NotificationEventControllerTest {
     @DisplayName("Should get all notification events without filters")
     void shouldGetAllNotificationEventsWithoutFilters() {
         // Given
-        NotificationEventFilterRequest filters = new NotificationEventFilterRequest();
         List<NotificationEvent> notifications = Collections.singletonList(notificationEvent);
 
         when(getNotificationEventsUseCase.getAll(null, null, null, null))
@@ -91,7 +90,8 @@ class NotificationEventControllerTest {
         when(mapper.toResponse(notificationEvent)).thenReturn(response);
 
         // When
-        ResponseEntity<List<NotificationEventResponse>> result = controller.getAll(filters);
+        ResponseEntity<List<NotificationEventResponse>> result = controller.getAll(
+                null, null, null, null, null, null, null, null);
 
         // Then
         assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -107,12 +107,8 @@ class NotificationEventControllerTest {
     @DisplayName("Should get all notification events with all filters")
     void shouldGetAllNotificationEventsWithAllFilters() {
         // Given
-        NotificationEventFilterRequest filters = new NotificationEventFilterRequest();
-        filters.setClientId("CLIENT001");
-        filters.setStatus(DeliveryStatus.SENT);
-        filters.setFromDate(LocalDateTime.now().minusDays(1));
-        filters.setToDate(LocalDateTime.now());
-
+        LocalDateTime fromDate = LocalDateTime.now().minusDays(1);
+        LocalDateTime toDate = LocalDateTime.now();
         List<NotificationEvent> notifications = Collections.singletonList(notificationEvent);
 
         when(getNotificationEventsUseCase.getAll(
@@ -123,8 +119,9 @@ class NotificationEventControllerTest {
                 .thenReturn(notifications);
         when(mapper.toResponse(notificationEvent)).thenReturn(response);
 
-        // When
-        ResponseEntity<List<NotificationEventResponse>> result = controller.getAll(filters);
+        // When - usando snake_case parameters
+        ResponseEntity<List<NotificationEventResponse>> result = controller.getAll(
+                "CLIENT001", null, "completed", null, fromDate, null, toDate, null);
 
         // Then
         assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -142,7 +139,6 @@ class NotificationEventControllerTest {
     @DisplayName("Should get all notification events with multiple results")
     void shouldGetAllNotificationEventsWithMultipleResults() {
         // Given
-        NotificationEventFilterRequest filters = new NotificationEventFilterRequest();
         NotificationEvent notification2 = NotificationEvent.builder()
                 .id(UUID.randomUUID())
                 .clientId("CLIENT002")
@@ -170,7 +166,8 @@ class NotificationEventControllerTest {
         when(mapper.toResponse(notification2)).thenReturn(response2);
 
         // When
-        ResponseEntity<List<NotificationEventResponse>> result = controller.getAll(filters);
+        ResponseEntity<List<NotificationEventResponse>> result = controller.getAll(
+                null, null, null, null, null, null, null, null);
 
         // Then
         assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -182,12 +179,12 @@ class NotificationEventControllerTest {
     @DisplayName("Should get all notification events with empty result")
     void shouldGetAllNotificationEventsWithEmptyResult() {
         // Given
-        NotificationEventFilterRequest filters = new NotificationEventFilterRequest();
         when(getNotificationEventsUseCase.getAll(null, null, null, null))
                 .thenReturn(Collections.emptyList());
 
         // When
-        ResponseEntity<List<NotificationEventResponse>> result = controller.getAll(filters);
+        ResponseEntity<List<NotificationEventResponse>> result = controller.getAll(
+                null, null, null, null, null, null, null, null);
 
         // Then
         assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);

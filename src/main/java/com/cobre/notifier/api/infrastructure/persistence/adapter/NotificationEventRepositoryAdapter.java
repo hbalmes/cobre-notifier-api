@@ -115,5 +115,14 @@ public class NotificationEventRepositoryAdapter implements NotificationEventRepo
     public long countByClientIdAndStatus(String clientId, DeliveryStatus status) {
         return jpaRepository.countByClientIdAndStatus(clientId, status);
     }
+
+    @Override
+    public Optional<NotificationEvent> findByKafkaEventId(String kafkaEventId) {
+        if (kafkaEventId == null || kafkaEventId.isEmpty()) {
+            return Optional.empty();
+        }
+        return jpaRepository.findByKafkaEventId(kafkaEventId)
+                .map(mapper::toDomain);
+    }
 }
 

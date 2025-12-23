@@ -67,8 +67,8 @@
       "pluginVersion": "8.0.0",
       "targets": [
         {
-          "expr": "sum(rate(kafka_publish_success_total[5m]))",
-          "legendFormat": "Publicaciones Exitosas/min",
+          "expr": "floor(sum(increase(kafka_publish_success_total[5m])))",
+          "legendFormat": "Publicaciones Exitosas",
           "refId": "A"
         }
       ],
@@ -124,8 +124,8 @@
       "pluginVersion": "8.0.0",
       "targets": [
         {
-          "expr": "sum(rate(kafka_publish_error_total[5m]))",
-          "legendFormat": "Publicaciones con Error/min",
+          "expr": "floor(sum(increase(kafka_publish_error_total[5m])))",
+          "legendFormat": "Publicaciones con Error",
           "refId": "A"
         }
       ],
@@ -231,8 +231,8 @@
       "pluginVersion": "8.0.0",
       "targets": [
         {
-          "expr": "sum(rate(kafka_consume_success_total[5m]))",
-          "legendFormat": "Consumos Exitosos/min",
+          "expr": "floor(sum(increase(kafka_consume_success_total[5m])))",
+          "legendFormat": "Consumos Exitosos",
           "refId": "A"
         }
       ],
@@ -288,8 +288,8 @@
       "pluginVersion": "8.0.0",
       "targets": [
         {
-          "expr": "sum(rate(kafka_consume_error_total[5m]))",
-          "legendFormat": "Consumos con Error/min",
+          "expr": "floor(sum(increase(kafka_consume_error_total[5m])))",
+          "legendFormat": "Consumos con Error",
           "refId": "A"
         }
       ],
@@ -345,8 +345,8 @@
       "pluginVersion": "8.0.0",
       "targets": [
         {
-          "expr": "sum(rate(kafka_consume_retry_total[5m]))",
-          "legendFormat": "Reintentos de Consumo/min",
+          "expr": "floor(sum(increase(kafka_consume_retry_total[5m])))",
+          "legendFormat": "Reintentos de Consumo",
           "refId": "A"
         }
       ],
@@ -402,8 +402,8 @@
       "pluginVersion": "8.0.0",
       "targets": [
         {
-          "expr": "sum(rate(kafka_consume_invalid_subscription_total[5m]))",
-          "legendFormat": "Suscripciones Inválidas/min",
+          "expr": "floor(sum(increase(kafka_consume_invalid_subscription_total[5m])))",
+          "legendFormat": "Suscripciones Inválidas",
           "refId": "A"
         }
       ],
@@ -509,8 +509,8 @@
       "pluginVersion": "8.0.0",
       "targets": [
         {
-          "expr": "sum(rate(notification_replay_manual_total[5m]))",
-          "legendFormat": "Replays Manuales/min",
+          "expr": "floor(sum(increase(notification_replay_manual_total[5m])))",
+          "legendFormat": "Replays Manuales",
           "refId": "A"
         }
       ],
@@ -566,8 +566,8 @@
       "pluginVersion": "8.0.0",
       "targets": [
         {
-          "expr": "sum(rate(notification_replay_success_total[5m]))",
-          "legendFormat": "Replays Exitosos/min",
+          "expr": "floor(sum(increase(notification_replay_success_total[5m])))",
+          "legendFormat": "Replays Exitosos",
           "refId": "A"
         }
       ],
@@ -623,8 +623,8 @@
       "pluginVersion": "8.0.0",
       "targets": [
         {
-          "expr": "sum(rate(notification_replay_failure_total[5m]))",
-          "legendFormat": "Replays Fallidos/min",
+          "expr": "floor(sum(increase(notification_replay_failure_total[5m])))",
+          "legendFormat": "Replays Fallidos",
           "refId": "A"
         }
       ],
@@ -718,27 +718,27 @@
       "pluginVersion": "8.0.0",
       "targets": [
         {
-          "expr": "sum(rate(kafka_publish_success_total[5m]))",
+          "expr": "floor(sum(increase(kafka_publish_success_total[5m])))",
           "legendFormat": "Publicaciones Exitosas",
           "refId": "A"
         },
         {
-          "expr": "sum(rate(kafka_publish_error_total[5m]))",
+          "expr": "floor(sum(increase(kafka_publish_error_total[5m])))",
           "legendFormat": "Publicaciones con Error",
           "refId": "B"
         },
         {
-          "expr": "sum(rate(kafka_consume_success_total[5m]))",
+          "expr": "floor(sum(increase(kafka_consume_success_total[5m])))",
           "legendFormat": "Consumos Exitosos",
           "refId": "C"
         },
         {
-          "expr": "sum(rate(kafka_consume_error_total[5m]))",
+          "expr": "floor(sum(increase(kafka_consume_error_total[5m])))",
           "legendFormat": "Consumos con Error",
           "refId": "D"
         },
         {
-          "expr": "sum(rate(kafka_consume_retry_total[5m]))",
+          "expr": "floor(sum(increase(kafka_consume_retry_total[5m])))",
           "legendFormat": "Reintentos de Consumo",
           "refId": "E"
         }
@@ -837,7 +837,7 @@
       "pluginVersion": "8.0.0",
       "targets": [
         {
-          "expr": "topk(10, sum(rate(notification_processed_by_client_total[5m])) by (client_id))",
+          "expr": "topk(10, floor(sum(increase(notification_processed_by_client_total[5m])) by (client_id)))",
           "legendFormat": "{{client_id}}",
           "refId": "A"
         }
@@ -876,7 +876,7 @@
       "pluginVersion": "8.0.0",
       "targets": [
         {
-          "expr": "topk(10, sum(rate(notification_retry_by_client_total[5m])) by (client_id))",
+          "expr": "topk(10, floor(sum(increase(notification_retry_by_client_total[5m])) by (client_id)))",
           "legendFormat": "{{client_id}}",
           "refId": "A"
         }
@@ -936,7 +936,7 @@
       "pluginVersion": "8.0.0",
       "targets": [
         {
-          "expr": "sum(rate(notification_delivery_success_initial_total[5m])) / sum(rate(notification_processed_total[5m])) * 100",
+          "expr": "floor(sum(increase(notification_delivery_success_initial_total[5m])) / sum(increase(notification_processed_total[5m])) * 100)",
           "legendFormat": "Tasa de Éxito Inicial (%)",
           "refId": "A"
         }
@@ -1110,8 +1110,8 @@
       "pluginVersion": "8.0.0",
       "targets": [
         {
-          "expr": "sum(rate(notification_retry_attempts_max_reached_total[5m]))",
-          "legendFormat": "Máximo Reintentos Alcanzados/min",
+          "expr": "sum(increase(notification_retry_attempts_max_reached_total[5m]))",
+          "legendFormat": "Máximo Reintentos Alcanzados",
           "refId": "A"
         }
       ],
@@ -1160,27 +1160,27 @@
       "pluginVersion": "8.0.0",
       "targets": [
         {
-          "expr": "sum(rate(notification_delivery_success_initial_total[5m]))",
+          "expr": "floor(sum(increase(notification_delivery_success_initial_total[5m])))",
           "legendFormat": "Entregas Exitosas (Inicial)",
           "refId": "A"
         },
         {
-          "expr": "sum(rate(notification_delivery_failed_initial_total[5m]))",
+          "expr": "floor(sum(increase(notification_delivery_failed_initial_total[5m])))",
           "legendFormat": "Entregas Fallidas (Inicial)",
           "refId": "B"
         },
         {
-          "expr": "sum(rate(notification_retry_attempts_success_total[5m]))",
+          "expr": "floor(sum(increase(notification_retry_attempts_success_total[5m])))",
           "legendFormat": "Reintentos Exitosos",
           "refId": "C"
         },
         {
-          "expr": "sum(rate(notification_retry_attempts_failed_total[5m]))",
+          "expr": "floor(sum(increase(notification_retry_attempts_failed_total[5m])))",
           "legendFormat": "Reintentos Fallidos",
           "refId": "D"
         },
         {
-          "expr": "sum(rate(notification_retry_attempts_max_reached_total[5m]))",
+          "expr": "sum(increase(notification_retry_attempts_max_reached_total[5m]))",
           "legendFormat": "Máximo Reintentos Alcanzados",
           "refId": "E"
         }
@@ -1230,18 +1230,18 @@
       "pluginVersion": "8.0.0",
       "targets": [
         {
-          "expr": "rate(notification_delivery_duration_initial_sum[5m]) / rate(notification_delivery_duration_initial_count[5m])",
-          "legendFormat": "Tiempo Entrega Inicial (ms)",
+          "expr": "rate(webhook_delivery_duration_sum[5m]) / rate(webhook_delivery_duration_count[5m])",
+          "legendFormat": "Tiempo Entrega Promedio (ms)",
           "refId": "A"
         },
         {
-          "expr": "histogram_quantile(0.95, sum(rate(notification_delivery_duration_initial_bucket[5m])) by (le))",
-          "legendFormat": "P95 Entrega Inicial (ms)",
+          "expr": "histogram_quantile(0.95, sum(rate(webhook_delivery_duration_bucket[5m])) by (le))",
+          "legendFormat": "P95 Entrega (ms)",
           "refId": "B"
         },
         {
-          "expr": "histogram_quantile(0.99, sum(rate(notification_delivery_duration_initial_bucket[5m])) by (le))",
-          "legendFormat": "P99 Entrega Inicial (ms)",
+          "expr": "histogram_quantile(0.99, sum(rate(webhook_delivery_duration_bucket[5m])) by (le))",
+          "legendFormat": "P99 Entrega (ms)",
           "refId": "C"
         }
       ],
@@ -1279,27 +1279,27 @@
       "pluginVersion": "8.0.0",
       "targets": [
         {
-          "expr": "sum(rate(webhook_delivery_success_total[5m]))",
+          "expr": "floor(sum(increase(webhook_delivery_success_total[5m])))",
           "legendFormat": "Entregas Exitosas",
           "refId": "A"
         },
         {
-          "expr": "sum(rate(webhook_delivery_failure_total[5m]))",
+          "expr": "floor(sum(increase(webhook_delivery_failure_total[5m])))",
           "legendFormat": "Entregas Fallidas",
           "refId": "B"
         },
         {
-          "expr": "sum(rate(webhook_delivery_client_error_total[5m]))",
+          "expr": "floor(sum(increase(webhook_delivery_client_error_total[5m])))",
           "legendFormat": "Errores 4xx",
           "refId": "C"
         },
         {
-          "expr": "sum(rate(webhook_delivery_server_error_total[5m]))",
+          "expr": "floor(sum(increase(webhook_delivery_server_error_total[5m])))",
           "legendFormat": "Errores 5xx",
           "refId": "D"
         },
         {
-          "expr": "sum(rate(webhook_delivery_timeout_total[5m]))",
+          "expr": "floor(sum(increase(webhook_delivery_timeout_total[5m])))",
           "legendFormat": "Timeouts",
           "refId": "E"
         }
@@ -1334,7 +1334,7 @@
         "name": "client_id",
         "options": [],
         "query": {
-          "query": "label_values(notification_processed_by_client_total, client_id)",
+          "query": "label_values(notification_processed_by_client_total{client_id!=\"\"}, client_id)",
           "refId": "StandardVariableQuery"
         },
         "refresh": 1,
